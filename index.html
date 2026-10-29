@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบเลือกชุมนุมออนไลน์ | Satit VRU Clubs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root { --green: #81c784; --gold: #ffd54f; --pastel-blue: #90caf9; --pink: #f48fb1; --ink: #37474f; --muted: #78909c; --bg: #f9fbe7; --white: #ffffff; --sidebar-width: 250px; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Itim', cursive; color: var(--ink); background-color: var(--bg); background-image: radial-gradient(#dce775 2.5px, transparent 2.5px); background-size: 35px 35px; font-size: 16px; }
+button, input, select, textarea { font: inherit; outline: none; }
+.sticker { background: var(--white); border: 6px solid var(--white); border-radius: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04); }
+button { cursor: pointer; border: 3px solid var(--white); border-radius: 16px; padding: 10px 18px; font-weight: bold; box-shadow: 0 4px 0px rgba(0,0,0,0.1); transition: all 0.15s ease; }
+button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0px 0px rgba(0,0,0,0.1); }
+button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+.primary { background: var(--pastel-blue); color: var(--ink); border-color: var(--white); }
+.secondary { background: #f0f4f8; color: var(--muted); }
+.danger { background: var(--pink); color: var(--white); }
+.success { background: var(--green); color: var(--white); }
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.top { background: var(--gold); color: var(--ink); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 4px solid var(--white); }
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo { width: 46px; height: 46px; border-radius: 14px; background: var(--white); display: grid; place-items: center; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: rotate(-5deg); overflow: hidden; }
+.logo img { width: 100%; height: 100%; object-fit: cover; }
+.brand h1 { font-size: 22px; margin: 0; color: var(--ink); }
+.brand p { margin: 0; color: #546e7a; font-size: 14px; }
+.top-actions button { background: var(--white); color: var(--ink); border: 2px solid var(--white); box-shadow: 0 2px 0 rgba(0,0,0,0.05); }
+.wrap { max-width: 1180px; margin: 24px auto; padding: 0 18px; width: 100%; }
+.welcome { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+.welcome h2 { margin: 0 0 6px; font-size: 28px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.club { overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; }
+.club:hover { transform: translateY(-5px) rotate(1deg); }
+.clubcover { height: 160px; background-size: cover; background-position: center; background-color: #eef4ff; position: relative; border-radius: 16px; margin-bottom: 12px;}
+.clubhead { padding: 0 12px; }
+.club h3 { margin: 0 0 8px; font-size: 20px; }
+.clubbody { padding: 0 12px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.clubfoot { padding: 12px; background: #fafafa; border-radius: 16px; display: flex; flex-direction: column; gap: 8px; border: 2px dashed #eceff1; }
+.clubfoot button { width: 100%; font-size: 16px; }
+.tag { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: bold; background: var(--white); color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 2px solid var(--white); }
+.tag.full { background: var(--pink); color: var(--white); }
+.meta { font-size: 15px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.progress { height: 10px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin-top: 4px; border: 2px solid var(--white); box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+.progress-bar { height: 100%; background: var(--pastel-blue); transition: width 0.3s; }
+.panel { padding: 24px; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; min-width: 640px; }
+th, td { text-align: left; padding: 14px 10px; border-bottom: 2px dashed var(--bg); font-size: 15px; }
+th { color: var(--muted); font-weight: bold; }
+.login { max-width: 420px; margin: 60px auto; padding: 0 18px; width: 100%; }
+.loginbox { padding: 36px; text-align: center; }
+.loginbox h2 { margin: 0 0 12px; font-size: 28px; }
+.loginbox label { display: block; font-size: 15px; margin: 16px 0 8px; text-align: left; font-weight: bold; color: var(--muted); }
+.field { width: 100%; padding: 12px 16px; border: 2px solid #cfd8dc; border-radius: 14px; background: #f5f7f8; transition: border 0.2s; }
+.field:focus { border-color: var(--pastel-blue); background: var(--white); }
+input[type="file"].field { padding: 9px; background: var(--white); }
+.rolepick { display: flex; border-radius: 16px; overflow: hidden; border: 3px solid var(--white); margin: 24px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.rolepick button { flex: 1; border-radius: 0; background: #eceff1; border: none; padding: 14px; font-size: 16px; box-shadow: none;}
+.rolepick button.active { background: var(--gold); color: var(--ink); }
+.tabs { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.tabs button { background: var(--white); color: var(--muted); border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.tabs button.active { background: var(--pastel-blue); color: var(--ink); }
+.hidden { display: none !important; }
+.userpill { background: var(--white); padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.admin-layout { display: flex; flex: 1; overflow: hidden; max-width: 1300px; margin: 20px auto; width: 100%; padding: 0 18px; gap: 20px;}
+.sidebar { width: var(--sidebar-width); display: flex; flex-direction: column; gap: 12px; }
+.side-item { padding: 14px 20px; color: var(--muted); cursor: pointer; font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 10px; border-radius: 16px; transition: 0.2s; background: var(--white); border: 2px solid transparent;}
+.side-item:hover { transform: translateX(5px); }
+.side-item.active { color: var(--ink); background: var(--gold); border: 2px solid var(--white); box-shadow: 0 4px 10px rgba(0,0,0,0.1); transform: rotate(-2deg); }
+.admin-content { flex: 1; overflow-y: auto; }
+.switch { position: relative; display: inline-block; width: 56px; height: 30px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cfd8dc; transition: .4s; border-radius: 34px; border: 2px solid var(--white); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+input:checked + .slider { background-color: var(--green); }
+input:checked + .slider:before { transform: translateX(26px); }
+.formgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.formgrid label { display: flex; flex-direction: column; gap: 8px; font-weight: bold; color: var(--muted); }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(55,71,79,0.6); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px; }
+.modal-content { max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+#loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.92); z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; color: #1976d2; padding: 20px; text-align: center; }
+
+@media(max-width: 768px) {
+  .admin-layout { flex-direction: column; }
+  .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 5px; gap: 8px;}
+  .side-item { white-space: nowrap; padding: 10px 16px; }
+  .side-item:hover, .side-item.active { transform: none; }
+}
+</style>
+</head>
+<body>
+<div id="loadingOverlay" class="hidden">กำลังประมวลผล...</div>
+<div class="app">
+<header class="top">
+  <div class="brand"><div class="logo" id="siteLogo">🧸</div><div><h1>Satit VRU Clubs</h1><p id="topTermText">กำลังเชื่อมต่อฐานข้อมูล...</p></div></div>
+  <div class="top-actions"><span class="userpill hidden" id="userPill"></span><button id="logoutBtn" class="hidden" onclick="logout()">ออกจากระบบ</button></div>
+</header>
+
+<main id="loginView" class="login">
+  <div class="loginbox sticker">
+    <h2>เข้าสู่ระบบ</h2>
+    <div class="rolepick">
+      <button class="active" data-role="student" onclick="pickRole('student')">🎒 นักเรียน</button>
+      <button data-role="admin" onclick="pickRole('admin')">🛡️ แอดมิน</button>
+    </div>
+    
+    <div id="studentLoginFields">
+      <label>รหัสนักเรียน</label>
+      <input id="studentId" class="field" placeholder="กรอกรหัสนักเรียน" onkeydown="if(event.key==='Enter') login()">
+    </div>
+
+    <div id="adminLoginFields" class="hidden">
+      <label>Username</label>
+      <input id="adminUser" class="field" placeholder="กรอกชื่อผู้ใช้งาน" onkeydown="if(event.key==='Enter') login()">
+      <label>Password</label>
+      <input id="adminPass" class="field" type="password" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter') login()">
+    </div>
+
+    <button id="loginBtn" class="primary" style="width:100%; margin-top:24px; font-size:18px" onclick="login()" disabled>⏳ กำลังโหลดฐานข้อมูล...</button>
+  </div>
+</main>
+
+<main id="studentAppView" class="wrap hidden">
+  <div class="welcome">
+    <div>
+      <h2 id="studentWelcome">ยินดีต้อนรับ</h2>
+      <div style="color:var(--muted); font-size: 18px;">เลือกชุมนุมที่ใช่ สำหรับ <strong id="studentTerm" style="color:var(--pink)">ภาคเรียน</strong></div>
+    </div>
+    <div id="systemStatusBadge"></div>
+  </div>
+  <nav id="studentTabs" class="tabs">
+    <button class="active" onclick="setStudentTab('clubs')" id="tab-clubs">🎨 เลือกชุมนุม</button>
+    <button onclick="setStudentTab('my')" id="tab-my">💖 ชุมนุมของฉัน</button>
+  </nav>
+  <section id="studentContent"></section>
+</main>
+
+<main id="adminAppView" class="admin-layout hidden">
+  <aside class="sidebar">
+    <div class="side-item sticker active" onclick="setAdminTab('overview')" id="nav-overview">📊 ภาพรวมระบบ</div>
+    <div class="side-item sticker" onclick="setAdminTab('students')" id="nav-students">👥 รายชื่อและนำเข้า</div>
+    <div class="side-item sticker" onclick="setAdminTab('manage')" id="nav-manage">📚 จัดการชุมนุม</div>
+    <div class="side-item sticker" onclick="setAdminTab('settings')" id="nav-settings">⚙️ ตั้งค่าระบบ</div>
+  </aside>
+  <section class="admin-content" id="adminContent"></section>
+</main>
+</div>
+
+<!-- Modal สำหรับแก้ไขชุมนุม -->
+<div id="editClubModal" class="modal-overlay hidden">
+  <div class="panel sticker modal-content">
+    <h3 style="color:var(--pastel-blue)">✏️ แก้ไขชุมนุม</h3>
+    <div class="formgrid" style="display:flex; flex-direction:column; gap:12px;">
+      <input type="hidden" id="editClubId">
+      <label>ชื่อชุมนุม <input class="field" id="editClubName" required></label>
+      <label>จำนวนครูผู้ดูแล 
+        <select class="field" id="editClubTeacherCount" onchange="onEditTeacherCountChange()">
+          <option value="1">1 คน (รับ 30 คน)</option>
+          <option value="2">2 คน (รับ 60 คน)</option>
+        </select>
+      </label>
+      <label id="editClubTeacher1Label"><span id="editClubTeacher1Text">ครูประจำชุมนุม</span> <input class="field" id="editClubTeacher1" required placeholder="พิมพ์ชื่อครู"></label>
+      <label id="editClubTeacher2Label" class="hidden">ครูประจำชุมนุมคนที่ 2 <input class="field" id="editClubTeacher2" placeholder="พิมพ์ชื่อครูคนที่ 2"></label>
+      <label>จำนวนรับ (คน) <input class="field" type="number" id="editClubCapacity" readonly style="background:#f0f4f8; cursor:not-allowed;"></label>
+      <label>เปลี่ยนรูปภาพปก <input class="field" type="file" id="editClubImageFile" accept="image/*"></label>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px;">
+      <button class="primary" style="flex:1" onclick="saveEditedClub()">บันทึกการเปลี่ยนแปลง</button>
+      <button class="secondary" style="flex:1" onclick="closeEditModal()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️ ใส่ URL ใหม่ที่ได้จากการ Deploy ล่าสุดตรงนี้
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9wiMDc8LVNvmqW6NDCUikoU5AcWrmXqaNV_MLyaZW4j6YqDC1IEObNNKayKOqtjJsJw/exec';
+
+let db = { settings: { is_open: false, term: 'กำลังโหลด...', logo: '🧸' }, students: [], clubs: [], enrollments: [], admins: [] };
+let currentRole = 'student';
+let currentUser = null;
+let isSubmitting = false;
+
+window.onload = async () => {
+  // ลองโหลดข้อมูลจาก LocalStorage ก่อนเพื่อให้แสดงผลทันใจ
+  try {
+    const cachedStr = localStorage.getItem('satit_clubs_db');
+    if (cachedStr) {
+      const cachedDb = JSON.parse(cachedStr);
+      if (cachedDb && cachedDb.settings) {
+        db = cachedDb;
+        initLogo();
+        document.getElementById('topTermText').textContent = db.settings.term;
+        let btn = document.getElementById('loginBtn');
+        btn.textContent = '✨ เริ่มใช้งาน';
+        btn.disabled = false;
+      }
+    }
+  } catch (e) {}
+
+  // ดึงข้อมูลสดใหม่ล่าสุดจากเซิร์ฟเวอร์
+  let success = await apiCall('getData', {});
+  if(success) {
+     initLogo();
+     document.getElementById('topTermText').textContent = db.settings.term;
+     let btn = document.getElementById('loginBtn');
+     btn.textContent = '✨ เริ่มใช้งาน';
+     btn.disabled = false;
+  } else if (!db.students.length) {
+     document.getElementById('topTermText').textContent = 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ';
+     let btn = document.getElementById('loginBtn');
+     btn.textContent = '🔄 กดเพื่อโหลดใหม่';
+     btn.disabled = false;
+     btn.onclick = () => location.reload();
+  }
+};
+
+/**
+ * ฟังก์ชันเชื่อมต่อ API พร้อมระบบ Auto-retry และ Random Jitter รองรับ 1,500 คนเข้าใช้งานพร้อมกัน
+ */
+async function apiCall(action, payload, maxRetries = 4) {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.remove('hidden');
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1) {
+        overlay.textContent = `⏳ มีผู้เข้าคิวจำนวนมาก ระบบกำลังบันทึกตามคิวให้คุณอัตโนมัติ (ครั้งที่ ${attempt}/${maxRetries})...`;
+      } else {
+        overlay.textContent = 'กำลังประมวลผล...';
+      }
+
+      const res = await fetch(SCRIPT_URL, { 
+        method: 'POST', 
+        body: JSON.stringify({ action, ...payload }) 
+      });
+      const json = await res.json();
+
+      if (json.status === 'success') {
+        db = json.data;
+        try { localStorage.setItem('satit_clubs_db', JSON.stringify(db)); } catch(e) {}
+        overlay.classList.add('hidden');
+        return true;
+      }
+
+      // หากคิวเต็มชั่วคราว (busy) ให้ลองใหม่อัตโนมัติด้วย Jitter Delay
+      if (json.busy && attempt < maxRetries) {
+        const jitter = Math.floor(Math.random() * 1200) + 800; // สุ่มรอ 800 - 2000 ms
+        await new Promise(r => setTimeout(r, jitter));
+        continue;
+      }
+
+      overlay.classList.add('hidden');
+      alert(json.message || 'เกิดข้อผิดพลาดในการทำรายการ');
+      return false;
+
+    } catch (err) {
+      if (attempt < maxRetries) {
+        const jitter = Math.floor(Math.random() * 1500) + 1000;
+        await new Promise(r => setTimeout(r, jitter));
+        continue;
+      }
+      overlay.classList.add('hidden');
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง');
+      return false;
+    }
+  }
+
+  overlay.classList.add('hidden');
+  return false;
+}
+
+function initLogo() {
+  const logo = db.settings.logo || '🧸';
+  const logoEl = document.getElementById('siteLogo');
+  if(logo.startsWith('data:image') || logo.startsWith('http')) {
+    logoEl.innerHTML = `<img src="${logo}" alt="Logo">`;
+  } else {
+    logoEl.innerHTML = logo;
+  }
+}
+
+function saveData() {
+  db.clubs.forEach(c => c.current_enrolled = db.enrollments.filter(e => e.club_id == c.id).length);
+  apiCall('adminSave', { db: db }); 
+}
+
+function fileToBase64(file, callback) {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => callback(reader.result);
+}
+
+function pickRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.rolepick button').forEach(b => b.classList.toggle('active', b.dataset.role === role));
+  document.getElementById('studentLoginFields').classList.toggle('hidden', role !== 'student');
+  document.getElementById('adminLoginFields').classList.toggle('hidden', role !== 'admin');
+}
+
+function login() {
+  if (currentRole === 'student') {
+    const sId = document.getElementById('studentId').value.trim();
+    const student = db.students.find(s => String(s.id) === String(sId));
+    if (!student) return alert('ไม่พบรหัสนักเรียนนี้ในระบบ (หากเพิ่งเพิ่มข้อมูล กรุณารีเฟรชหน้าเว็บ)');
+    
+    currentUser = { role: 'student', data: student };
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('studentAppView').classList.remove('hidden');
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    document.getElementById('userPill').classList.remove('hidden');
+    document.getElementById('userPill').textContent = `🎒 ${student.name} (${student.class})`;
+    document.getElementById('studentWelcome').textContent = `สวัสดี, ${student.prefix}${student.name} ✨`;
+    document.getElementById('studentTerm').textContent = db.settings.term;
+    renderSystemBadge();
+    setStudentTab('clubs');
+
+  } else {
+    const u = document.getElementById('adminUser').value.trim();
+    const p = document.getElementById('adminPass').value.trim();
+    
+    const adminUser = (db.admins || []).find(a => String(a.username) === u && String(a.password) === p);
+    if (!adminUser) return alert('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
+    
+    currentUser = { role: 'admin', data: adminUser };
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('adminAppView').classList.remove('hidden');
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    document.getElementById('userPill').classList.remove('hidden');
+    document.getElementById('userPill').textContent = `👑 ${adminUser.name || 'ผู้ดูแลระบบ'}`;
+    setAdminTab('overview');
+  }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('studentAppView').classList.add('hidden');
+  document.getElementById('adminAppView').classList.add('hidden');
+  document.getElementById('logoutBtn').classList.add('hidden');
+  document.getElementById('userPill').classList.add('hidden');
+  document.getElementById('userPill').textContent = '';
+  document.getElementById('adminUser').value = '';
+  document.getElementById('adminPass').value = '';
+}
+
+function renderSystemBadge() {
+  const badge = document.getElementById('systemStatusBadge');
+  badge.innerHTML = db.settings.is_open 
+    ? '<span class="tag" style="background:var(--green);color:white;font-size:16px;">🟢 เปิดรับสมัคร</span>' 
+    : '<span class="tag full" style="font-size:16px;">🔴 ปิดรับสมัคร</span>';
+}
+
+function setStudentTab(tab) {
+  document.querySelectorAll('#studentTabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  const c = document.getElementById('studentContent');
+  if (tab === 'clubs') c.innerHTML = renderStudentClubs();
+  else if (tab === 'my') c.innerHTML = renderMyClub();
+}
+
+function renderStudentClubs() {
+  const myEnroll = db.enrollments.find(e => e.student_id == currentUser.data.id);
+  let html = `<div class="grid">`;
+  
+  db.clubs.forEach(club => {
+    const isFull = club.current_enrolled >= club.capacity;
+    const isMine = myEnroll && myEnroll.club_id == club.id;
+    const percent = Math.min(100, (club.current_enrolled / club.capacity) * 100);
+    
+    let btnHtml = '';
+    if (!db.settings.is_open) btnHtml = `<button class="secondary" disabled>ปิดรับสมัคร</button>`;
+    else if (isMine) btnHtml = `<button class="success" disabled>✅ ชุมนุมของคุณ</button>`;
+    else if (myEnroll) btnHtml = `<button class="secondary" disabled>คุณเลือกชุมนุมแล้ว</button>`;
+    else if (isFull) btnHtml = `<button class="danger" disabled>ที่นั่งเต็มแล้ว</button>`;
+    else btnHtml = `<button class="primary" onclick="enrollClub(${club.id})">💖 สมัครชุมนุมนี้</button>`;
+
+    html += `
+      <article class="club sticker">
+        <div class="clubcover" style="background-image:url('${club.image}')">
+           ${isFull ? '<span class="tag full" style="position:absolute; top:10px; right:10px;">เต็มแล้ว</span>' : ''}
+        </div>
+        <div class="clubhead"><h3>${club.name}</h3></div>
+        <div class="clubbody">
+          <div class="meta">👩‍🏫 ${club.teacher}</div>
+          <div class="meta" style="margin-top:4px">👥 สมัครแล้ว ${club.current_enrolled}/${club.capacity}</div>
+          <div class="progress"><div class="progress-bar ${isFull?'danger':''}" style="width:${percent}%"></div></div>
+        </div>
+        <div class="clubfoot">${btnHtml}</div>
+      </article>`;
+  });
+  return html + `</div>`;
+}
+
+async function enrollClub(id) {
+  if (isSubmitting) return;
+  if (!db.settings.is_open) return alert('ปิดรับสมัครแล้ว');
+  if (confirm('ยืนยันสมัครชุมนุมนี้ใช่หรือไม่?')) {
+    isSubmitting = true;
+    try {
+      let success = await apiCall('enroll', { student_id: currentUser.data.id, club_id: id });
+      if (success) setStudentTab('my');
+    } finally {
+      isSubmitting = false;
+    }
+  }
+}
+
+async function cancelClub() {
+  if (isSubmitting) return;
+  let studentData = db.students.find(s => s.id == currentUser.data.id);
+  let cancelCount = studentData ? (studentData.cancel_count || 0) : 0;
+  if (cancelCount >= 1) return alert('🚫 คุณใช้สิทธิ์เปลี่ยนชุมนุมครบแล้ว');
+  
+  if (confirm('⚠️ ยืนยันยกเลิกชุมนุมนี้ใช่หรือไม่?\n\n(คุณมีสิทธิ์เปลี่ยนใจได้อีกแค่ 1 ครั้ง)')) {
+    isSubmitting = true;
+    try {
+      let success = await apiCall('cancel', { student_id: currentUser.data.id });
+      if (success) setStudentTab('clubs');
+    } finally {
+      isSubmitting = false;
+    }
+  }
+}
+
+function renderMyClub() {
+  const myEnroll = db.enrollments.find(e => e.student_id == currentUser.data.id);
+  const studentData = db.students.find(s => s.id == currentUser.data.id);
+  const cancelCount = studentData ? (studentData.cancel_count || 0) : 0;
+  if (!myEnroll) return `<div class="panel sticker" style="text-align:center; padding: 50px 20px;"><h3>คุณยังไม่ได้เลือกชุมนุม 🥺</h3><p style="color:var(--muted)">ไปที่หน้า "เลือกชุมนุม" เพื่อเริ่มต้นเลย</p></div>`;
+  const club = db.clubs.find(c => c.id == myEnroll.club_id);
+  
+  let cancelBtnHtml = '';
+  if (!db.settings.is_open) {
+    cancelBtnHtml = `<button class="secondary" disabled>🔒 ปิดรับสมัครแล้ว</button>`;
+  } else if (cancelCount >= 1) {
+    cancelBtnHtml = `<button class="secondary" disabled>🚫 ใช้สิทธิ์เปลี่ยนชุมนุมครบแล้ว</button>`;
+  } else {
+    cancelBtnHtml = `<button class="danger" onclick="cancelClub()">🗑️ ยกเลิกชุมนุม (เปลี่ยนใจได้อีก 1 ครั้ง)</button>`;
+  }
+
+  return `
+    <div class="panel sticker" style="max-width:500px; margin:0 auto; text-align:center;">
+      <h3 style="color:var(--green)">✅ สมัครสำเร็จ</h3>
+      <img src="${club.image}" style="width:100%; height:180px; object-fit:cover; border-radius:16px; margin:16px 0; border:4px solid var(--white); box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+      <h2>${club.name}</h2>
+      <p style="color:var(--muted); font-size:18px;">ดูแลโดย: ${club.teacher}</p>
+      <div style="margin-top:24px;">
+        ${cancelBtnHtml}
+      </div>
+    </div>`;
+}
+
+function setAdminTab(tab) {
+  document.querySelectorAll('.sidebar .side-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + tab).classList.add('active');
+  const c = document.getElementById('adminContent');
+  if (tab === 'overview') c.innerHTML = renderAdminOverview();
+  else if (tab === 'students') c.innerHTML = renderAdminStudents();
+  else if (tab === 'manage') c.innerHTML = renderAdminManage();
+  else if (tab === 'settings') c.innerHTML = renderAdminSettings();
+}
+
+function renderAdminOverview() {
+  return `
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 24px;">
+      <div class="panel sticker" style="text-align:center">
+        <h1 style="margin:0; font-size: 40px; color:var(--pastel-blue)">${db.students.length}</h1>
+        <p style="margin:0; color:var(--muted)">นักเรียนทั้งหมด</p>
+      </div>
+      <div class="panel sticker" style="text-align:center">
+        <h1 style="margin:0; font-size: 40px; color:var(--green)">${db.enrollments.length}</h1>
+        <p style="margin:0; color:var(--muted)">เลือกชุมนุมแล้ว</p>
+      </div>
+    </div>
+    <div class="panel sticker">
+      <h3>สถานะชุมนุม</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <tr><th>ชื่อชุมนุม</th><th>ครูประจำชุมนุม</th><th>ยอดสมัคร / จำนวนรับ</th></tr>
+          ${db.clubs.map(c => `<tr><td>${c.name}</td><td>${c.teacher}</td><td><b style="color:${c.current_enrolled>=c.capacity?'var(--pink)':'var(--green)'}">${c.current_enrolled}</b> / ${c.capacity}</td></tr>`).join('')}
+        </table>
+      </div>
+    </div>`;
+}
+
+function importExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type: 'array'});
+    const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
+    
+    let imported = 0;
+    json.forEach(row => {
+      const id = String(row['รหัสนักเรียน'] || row['ID'] || '').trim();
+      if(id && !db.students.find(s => s.id == id)) {
+        db.students.push({ id, prefix: row['คำนำหน้า']||'', name: row['ชื่อ']||'', surname: row['สกุล']||'', class: row['ชั้น']||'', cancel_count: 0 });
+        imported++;
+      }
+    });
+    saveData(); setAdminTab('students'); event.target.value = ''; alert(`นำเข้ารายชื่อนักเรียนใหม่สำเร็จ ${imported} คน`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderAdminStudents() {
+  const classes = [...new Set(db.students.map(s => s.class))].sort();
+  const options = classes.map(c => `<option value="${c}">ชั้น ${c}</option>`).join('');
+  return `
+    <div class="panel sticker">
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom: 20px;">
+        <h3 style="margin:0">ข้อมูลนักเรียนรายห้อง</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display:none" onchange="importExcel(event)">
+          <button class="secondary" onclick="document.getElementById('excelUpload').click()">📂 นำเข้าจาก Excel</button>
+          <button class="primary" onclick="exportToExcel()">📥 โหลด Excel ออก</button>
+        </div>
+      </div>
+      <select id="classFilter" class="field" style="width:200px; margin-bottom:16px;" onchange="filterAdminTable()">
+        <option value="all">ดูทุกห้องเรียน</option>${options}
+      </select>
+      <div style="overflow-x:auto;" id="adminStudentTableArea">${buildAdminStudentTable('all')}</div>
+    </div>`;
+}
+
+function buildAdminStudentTable(filterClass) {
+  let list = db.students;
+  if(filterClass !== 'all') list = list.filter(s => s.class === filterClass);
+  let rows = list.map(s => {
+    const enroll = db.enrollments.find(e => e.student_id == s.id);
+    const clubName = enroll ? db.clubs.find(c => c.id == enroll.club_id)?.name : '<span style="color:var(--pink)">ยังไม่เลือก</span>';
+    return `<tr><td>${s.id}</td><td>${s.prefix}${s.name} ${s.surname}</td><td>${s.class}</td><td>${clubName}</td></tr>`;
+  }).join('');
+  return `<table id="exportTable"><tr><th>รหัสนักเรียน</th><th>ชื่อ - นามสกุล</th><th>ชั้นเรียน</th><th>ชุมนุมที่เลือก</th></tr>${rows}</table>`;
+}
+
+function filterAdminTable() {
+  document.getElementById('adminStudentTableArea').innerHTML = buildAdminStudentTable(document.getElementById('classFilter').value);
+}
+
+function exportToExcel() {
+  XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('exportTable'), {sheet: "รายชื่อชุมนุม"}), "ข้อมูลชุมนุมรายห้อง.xlsx");
+}
+
+function renderAdminManage() {
+  return `
+    <div class="panel sticker">
+      <h3>➕ เพิ่มชุมนุมใหม่</h3>
+      <div class="formgrid">
+        <label>ชื่อชุมนุม <input class="field" id="newClubName" required placeholder="เช่น ชุมนุมดนตรี"></label>
+        <label>จำนวนครูผู้ดูแล 
+          <select class="field" id="newClubTeacherCount" onchange="onNewTeacherCountChange()">
+            <option value="1">1 คน (รับ 30 คน)</option>
+            <option value="2">2 คน (รับ 60 คน)</option>
+          </select>
+        </label>
+        <label id="newClubTeacher1Label"><span id="newClubTeacher1Text">ครูประจำชุมนุม</span> <input class="field" id="newClubTeacher1" required placeholder="พิมพ์ชื่อครู"></label>
+        <label id="newClubTeacher2Label" class="hidden">ครูประจำชุมนุมคนที่ 2 <input class="field" id="newClubTeacher2" placeholder="พิมพ์ชื่อครูคนที่ 2"></label>
+        <label>จำนวนรับ (คน) <input class="field" type="number" id="newClubCapacity" readonly value="30" style="background:#f0f4f8; cursor:not-allowed;"></label>
+        <label>อัปโหลดรูปภาพปก <input type="file" class="field" id="newClubImageFile" accept="image/*"></label>
+      </div>
+      <button class="primary" style="margin-top:16px;" onclick="addNewClub()">บันทึกชุมนุมใหม่</button>
+    </div>
+    
+    <div class="panel sticker">
+      <h3>📚 รายการชุมนุมทั้งหมด</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <tr><th>รูป</th><th>ชื่อชุมนุม</th><th>ครูประจำชุมนุม</th><th>ยอดรับ</th><th>จัดการ</th></tr>
+          ${db.clubs.map(c => `
+            <tr>
+              <td><img src="${c.image || 'https://via.placeholder.com/150'}" style="width:60px; height:60px; object-fit:cover; border-radius:12px;"></td>
+              <td>${c.name}</td><td>${c.teacher}</td><td>${c.current_enrolled}/${c.capacity}</td>
+              <td>
+                <div style="display:flex; gap:6px;">
+                  <button class="secondary" style="padding:6px 12px; font-size:14px" onclick="openEditModal(${c.id})">แก้ไข</button>
+                  <button class="danger" style="padding:6px 12px; font-size:14px" onclick="deleteClub(${c.id})">ลบ</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function onNewTeacherCountChange() {
+  const count = document.getElementById('newClubTeacherCount').value;
+  const capInput = document.getElementById('newClubCapacity');
+  const t2Label = document.getElementById('newClubTeacher2Label');
+  const t1Text = document.getElementById('newClubTeacher1Text');
+  const t1Input = document.getElementById('newClubTeacher1');
+
+  if (count === '2') {
+    capInput.value = 60;
+    t2Label.classList.remove('hidden');
+    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุมคนที่ 1';
+    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครูคนที่ 1';
+  } else {
+    capInput.value = 30;
+    t2Label.classList.add('hidden');
+    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุม';
+    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครู';
+    const t2Input = document.getElementById('newClubTeacher2');
+    if (t2Input) t2Input.value = '';
+  }
+}
+
+function onEditTeacherCountChange() {
+  const count = document.getElementById('editClubTeacherCount').value;
+  const capInput = document.getElementById('editClubCapacity');
+  const t2Label = document.getElementById('editClubTeacher2Label');
+  const t1Text = document.getElementById('editClubTeacher1Text');
+  const t1Input = document.getElementById('editClubTeacher1');
+
+  if (count === '2') {
+    capInput.value = 60;
+    t2Label.classList.remove('hidden');
+    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุมคนที่ 1';
+    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครูคนที่ 1';
+  } else {
+    capInput.value = 30;
+    t2Label.classList.add('hidden');
+    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุม';
+    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครู';
+    const t2Input = document.getElementById('editClubTeacher2');
+    if (t2Input) t2Input.value = '';
+  }
+}
+
+function parseTeachers(teacherStr) {
+  if (!teacherStr) return ['', ''];
+  let parts = teacherStr.split(/,|และ|\//).map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) return ['', ''];
+  if (parts.length === 1) return [parts[0], ''];
+  return [parts[0], parts.slice(1).join(', ')];
+}
+
+function addNewClub() {
+  const name = document.getElementById('newClubName').value.trim();
+  const tCount = document.getElementById('newClubTeacherCount').value;
+  const t1 = document.getElementById('newClubTeacher1').value.trim();
+  const t2Input = document.getElementById('newClubTeacher2');
+  const t2 = t2Input ? t2Input.value.trim() : '';
+  const capacity = parseInt(document.getElementById('newClubCapacity').value);
+  const fileInput = document.getElementById('newClubImageFile');
+
+  if (!name || !t1 || !capacity) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+  if (tCount === '2' && !t2) return alert('กรุณากรอกชื่อครูประจำชุมนุมคนที่ 2 ให้ครบถ้วน');
+
+  const teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
+
+  const newId = db.clubs.length > 0 ? Math.max(...db.clubs.map(c => Number(c.id) || 0)) + 1 : 1;
+  const newClub = { id: newId, name, teacher, capacity, current_enrolled: 0, image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400' };
+
+  if (fileInput.files.length > 0) {
+    fileToBase64(fileInput.files[0], (base64) => {
+      newClub.image = base64; db.clubs.push(newClub); saveData(); setAdminTab('manage');
+    });
+  } else {
+    db.clubs.push(newClub); saveData(); setAdminTab('manage');
+  }
+}
+
+function deleteClub(id) {
+  if(confirm('⚠️ ยืนยันการลบชุมนุมนี้?')) {
+    db.clubs = db.clubs.filter(c => c.id !== id);
+    db.enrollments = db.enrollments.filter(e => e.club_id !== id); 
+    saveData(); setAdminTab('manage');
+  }
+}
+
+function openEditModal(id) {
+  const club = db.clubs.find(c => c.id == id);
+  if (!club) return;
+  document.getElementById('editClubId').value = club.id;
+  document.getElementById('editClubName').value = club.name;
+  
+  const parts = parseTeachers(club.teacher);
+  const isTwo = club.capacity >= 60 || Boolean(parts[1]);
+  const tCount = isTwo ? '2' : '1';
+  document.getElementById('editClubTeacherCount').value = tCount;
+  document.getElementById('editClubCapacity').value = tCount === '2' ? 60 : 30;
+  
+  document.getElementById('editClubTeacher1').value = parts[0] || club.teacher;
+  document.getElementById('editClubTeacher2').value = parts[1] || '';
+  
+  const t2Label = document.getElementById('editClubTeacher2Label');
+  const t1Text = document.getElementById('editClubTeacher1Text');
+  const t1Input = document.getElementById('editClubTeacher1');
+
+  if (tCount === '2') {
+    t2Label.classList.remove('hidden');
+    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุมคนที่ 1';
+    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครูคนที่ 1';
+  } else {
+    t2Label.classList.add('hidden');
+    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุม';
+    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครู';
+  }
+  
+  document.getElementById('editClubImageFile').value = ''; 
+  document.getElementById('editClubModal').classList.remove('hidden');
+}
+
+function closeEditModal() { document.getElementById('editClubModal').classList.add('hidden'); }
+
+function saveEditedClub() {
+  const id = parseInt(document.getElementById('editClubId').value);
+  let club = db.clubs.find(c => c.id == id);
+  if (club) {
+    const name = document.getElementById('editClubName').value.trim();
+    const tCount = document.getElementById('editClubTeacherCount').value;
+    const t1 = document.getElementById('editClubTeacher1').value.trim();
+    const t2 = document.getElementById('editClubTeacher2').value.trim();
+    const capacity = parseInt(document.getElementById('editClubCapacity').value);
+
+    if (!name || !t1) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    if (tCount === '2' && !t2) return alert('กรุณากรอกชื่อครูประจำชุมนุมคนที่ 2 ให้ครบถ้วน');
+
+    club.name = name;
+    club.teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
+    club.capacity = capacity;
+
+    const fileInput = document.getElementById('editClubImageFile');
+    if (fileInput.files.length > 0) {
+      fileToBase64(fileInput.files[0], (base64) => { club.image = base64; finishSavingEdit(); });
+    } else finishSavingEdit();
+  }
+}
+
+function finishSavingEdit() { saveData(); closeEditModal(); setAdminTab('manage'); }
+
+function renderAdminSettings() {
+  return `
+    <div class="panel sticker" style="max-width: 600px;">
+      <h3>🛠️ ตั้งค่าระบบ</h3>
+      <div style="margin: 24px 0; display:flex; align-items:center; gap: 16px; background:#fafafa; padding:16px; border-radius:16px; border:2px dashed #eceff1;">
+        <label class="switch">
+          <input type="checkbox" id="toggleSystemBtn" ${db.settings.is_open ? 'checked' : ''} onchange="toggleSystem()">
+          <span class="slider"></span>
+        </label>
+        <div>
+          <b style="font-size:18px;">เปิดระบบรับสมัคร</b>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">หากปิด นักเรียนจะไม่สามารถเลือกหรือเปลี่ยนชุมนุมได้</p>
+        </div>
+      </div>
+      <div style="margin-top:24px; padding-top:24px; border-top: 2px dashed #eceff1;">
+        <label style="font-weight:bold; display:block; margin-bottom:12px;">อัปโหลดโลโก้โรงเรียน / เว็บไซต์</label>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <input type="file" id="logoFileInput" class="field" accept="image/*">
+          <button class="primary" style="width: fit-content;" onclick="saveLogoFile()">บันทึกรูปโลโก้</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleSystem() { db.settings.is_open = document.getElementById('toggleSystemBtn').checked; saveData(); }
+function saveLogoFile() {
+  const fileInput = document.getElementById('logoFileInput');
+  if (fileInput.files.length > 0) {
+    fileToBase64(fileInput.files[0], (base64) => { db.settings.logo = base64; saveData(); initLogo(); });
+  } else alert('กรุณาเลือกไฟล์รูปภาพก่อน');
+}
+</script>
+</body>
+</html>
