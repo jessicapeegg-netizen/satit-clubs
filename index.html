@@ -367,13 +367,79 @@ function initLogo() {
 
 function saveData() {
   db.clubs.forEach(c => c.current_enrolled = db.enrollments.filter(e => e.club_id == c.id).length);
-  apiCall('adminSave', { db: db }); 
+  return apiCall('adminSave', { db: db }); 
+}
+
+/**
+ * บีบอัดรูปภาพอัตโนมัติก่อนส่งบันทึก เพื่อไม่ให้เกินข้อจำกัด 50,000 อักขระของ Google Sheets
+ */
+function compressImage(file, maxWidth, maxHeight, quality, callback) {
+  if (!file) return callback('');
+  if (file.type && !file.type.startsWith('image/')) {
+    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น (JPG, PNG, WebP ฯลฯ)');
+    return callback(null);
+  }
+
+  const reader = new FileReader();
+  reader.onerror = () => {
+    alert('ไม่สามารถอ่านไฟล์รูปภาพได้');
+    callback(null);
+  };
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onerror = () => {
+      alert('ไฟล์รูปภาพไม่ถูกต้อง หรือเสียหาย');
+      callback(null);
+    };
+    img.onload = () => {
+      let w = img.width;
+      let h = img.height;
+
+      // คำนวณอัตราส่วนเพื่อย่อขนาดให้พอดี
+      if (w > maxWidth || h > maxHeight) {
+        if (w / h > maxWidth / maxHeight) {
+          h = Math.round((h * maxWidth) / w);
+          w = maxWidth;
+        } else {
+          w = Math.round((w * maxHeight) / h);
+          h = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w, h);
+
+      let q = quality || 0.65;
+      let dataUrl = canvas.toDataURL('image/jpeg', q);
+
+      // ตรวจสอบขนาดสตริง ป้องกันไม่ให้เกิน 30,000 อักขระ (Google Sheets จำกัดที่ 50,000)
+      if (dataUrl.length > 30000) {
+        dataUrl = canvas.toDataURL('image/jpeg', 0.45);
+      }
+      if (dataUrl.length > 30000) {
+        const smallCanvas = document.createElement('canvas');
+        smallCanvas.width = Math.round(w * 0.7);
+        smallCanvas.height = Math.round(h * 0.7);
+        const sCtx = smallCanvas.getContext('2d');
+        sCtx.imageSmoothingEnabled = true;
+        sCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+        dataUrl = smallCanvas.toDataURL('image/jpeg', 0.45);
+      }
+
+      callback(dataUrl);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function fileToBase64(file, callback) {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => callback(reader.result);
+  compressImage(file, 380, 250, 0.65, callback);
 }
 
 function pickRole(role) {
@@ -1042,32 +1108,60 @@ function addNewClub() {
   if (tCount === '2' && !t2) return alert('กรุณากรอกชื่อครูประจำชุมนุมคนที่ 2 ให้ครบถ้วน');
 
   const teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
-
   const newId = db.clubs.length > 0 ? Math.max(...db.clubs.map(c => Number(c.id) || 0)) + 1 : 1;
-  const newClub = { 
-    id: newId, 
-    name, 
-    teacher, 
-    capacity, 
-    level,
-    current_enrolled: 0, 
-    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400' 
+
+  const proceed = async (base64Img) => {
+    const newClub = { 
+      id: newId, 
+      name, 
+      teacher, 
+      capacity, 
+      level,
+      current_enrolled: 0, 
+      image: base64Img || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400' 
+    };
+
+    const prevClubs = [...db.clubs];
+    db.clubs.push(newClub);
+
+    const success = await saveData();
+    if (success) {
+      document.getElementById('newClubName').value = '';
+      document.getElementById('newClubTeacher1').value = '';
+      if (document.getElementById('newClubTeacher2')) document.getElementById('newClubTeacher2').value = '';
+      fileInput.value = '';
+      setAdminTab('manage');
+      alert('บันทึกชุมนุมใหม่สำเร็จแล้ว ✨');
+    } else {
+      db.clubs = prevClubs;
+      setAdminTab('manage');
+    }
   };
 
   if (fileInput.files.length > 0) {
-    fileToBase64(fileInput.files[0], (base64) => {
-      newClub.image = base64; db.clubs.push(newClub); saveData(); setAdminTab('manage');
+    compressImage(fileInput.files[0], 380, 250, 0.65, (compressed) => {
+      if (compressed) proceed(compressed);
     });
   } else {
-    db.clubs.push(newClub); saveData(); setAdminTab('manage');
+    proceed(null);
   }
 }
 
-function deleteClub(id) {
-  if(confirm('⚠️ ยืนยันการลบชุมนุมนี้?')) {
+async function deleteClub(id) {
+  if (confirm('⚠️ ยืนยันการลบชุมนุมนี้?')) {
+    const prevClubs = [...db.clubs];
+    const prevEnroll = [...db.enrollments];
     db.clubs = db.clubs.filter(c => c.id !== id);
     db.enrollments = db.enrollments.filter(e => e.club_id !== id); 
-    saveData(); setAdminTab('manage');
+    const success = await saveData();
+    if (success) {
+      setAdminTab('manage');
+      alert('ลบชุมนุมเรียบร้อยแล้ว');
+    } else {
+      db.clubs = prevClubs;
+      db.enrollments = prevEnroll;
+      setAdminTab('manage');
+    }
   }
 }
 
@@ -1101,26 +1195,45 @@ function closeEditModal() { document.getElementById('editClubModal').classList.a
 function saveEditedClub() {
   const id = parseInt(document.getElementById('editClubId').value);
   let club = db.clubs.find(c => c.id == id);
-  if (club) {
-    const name = document.getElementById('editClubName').value.trim();
-    const level = document.getElementById('editClubLevel').value;
-    const tCount = document.getElementById('editClubTeacherCount').value;
-    const t1 = document.getElementById('editClubTeacher1').value.trim();
-    const t2 = document.getElementById('editClubTeacher2').value.trim();
-    const capacity = parseInt(document.getElementById('editClubCapacity').value);
+  if (!club) return;
 
-    if (!name || !t1) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-    if (tCount === '2' && !t2) return alert('กรุณากรอกชื่อครูประจำชุมนุมคนที่ 2 ให้ครบถ้วน');
+  const name = document.getElementById('editClubName').value.trim();
+  const level = document.getElementById('editClubLevel').value;
+  const tCount = document.getElementById('editClubTeacherCount').value;
+  const t1 = document.getElementById('editClubTeacher1').value.trim();
+  const t2 = document.getElementById('editClubTeacher2').value.trim();
+  const capacity = parseInt(document.getElementById('editClubCapacity').value);
 
-    club.name = name;
-    club.level = level;
-    club.teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
-    club.capacity = capacity;
+  if (!name || !t1) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+  if (tCount === '2' && !t2) return alert('กรุณากรอกชื่อครูประจำชุมนุมคนที่ 2 ให้ครบถ้วน');
 
-    const fileInput = document.getElementById('editClubImageFile');
-    if (fileInput.files.length > 0) {
-      fileToBase64(fileInput.files[0], (base64) => { club.image = base64; finishSavingEdit(); });
-    } else finishSavingEdit();
+  const oldClubData = { ...club };
+  club.name = name;
+  club.level = level;
+  club.teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
+  club.capacity = capacity;
+
+  const fileInput = document.getElementById('editClubImageFile');
+
+  const proceed = async (base64Img) => {
+    if (base64Img) club.image = base64Img;
+    const success = await saveData();
+    if (success) {
+      closeEditModal();
+      setAdminTab('manage');
+      alert('บันทึกการแก้ไขชุมนุมสำเร็จ ✨');
+    } else {
+      Object.assign(club, oldClubData);
+      setAdminTab('manage');
+    }
+  };
+
+  if (fileInput.files.length > 0) {
+    compressImage(fileInput.files[0], 380, 250, 0.65, (compressed) => {
+      if (compressed) proceed(compressed);
+    });
+  } else {
+    proceed(null);
   }
 }
 
@@ -1151,10 +1264,20 @@ function renderAdminSettings() {
 }
 
 function toggleSystem() { db.settings.is_open = document.getElementById('toggleSystemBtn').checked; saveData(); }
+
 function saveLogoFile() {
   const fileInput = document.getElementById('logoFileInput');
   if (fileInput.files.length > 0) {
-    fileToBase64(fileInput.files[0], (base64) => { db.settings.logo = base64; saveData(); initLogo(); });
+    compressImage(fileInput.files[0], 120, 120, 0.7, async (compressed) => {
+      if (compressed) {
+        db.settings.logo = compressed;
+        const success = await saveData();
+        if (success) {
+          initLogo();
+          alert('บันทึกรูปโลโก้เรียบร้อยแล้ว ✨');
+        }
+      }
+    });
   } else alert('กรุณาเลือกไฟล์รูปภาพก่อน');
 }
 </script>
