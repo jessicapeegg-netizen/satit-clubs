@@ -10,7 +10,25 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
 <style>
-:root { --green: #81c784; --gold: #ffd54f; --pastel-blue: #90caf9; --pink: #f48fb1; --ink: #37474f; --muted: #78909c; --bg: #f9fbe7; --white: #ffffff; --sidebar-width: 250px; }
+:root { 
+  --green: #81c784; 
+  --green-dark: #2e7d32; 
+  --green-light: #e8f5e9;
+  --gold: #ffd54f; 
+  --pastel-blue: #90caf9; 
+  --blue-dark: #1565c0;
+  --pink: #f48fb1; 
+  --pink-dark: #c2185b;
+  --pink-light: #fce4ec;
+  --purple: #ba68c8;
+  --purple-light: #f3e5f5;
+  --purple-dark: #7b1fa2;
+  --ink: #37474f; 
+  --muted: #78909c; 
+  --bg: #f9fbe7; 
+  --white: #ffffff; 
+  --sidebar-width: 250px; 
+}
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Itim', cursive; color: var(--ink); background-color: var(--bg); background-image: radial-gradient(#dce775 2.5px, transparent 2.5px); background-size: 35px 35px; font-size: 16px; }
 button, input, select, textarea { font: inherit; outline: none; }
@@ -30,26 +48,28 @@ button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow
 .brand h1 { font-size: 22px; margin: 0; color: var(--ink); }
 .brand p { margin: 0; color: #546e7a; font-size: 14px; }
 .top-actions button { background: var(--white); color: var(--ink); border: 2px solid var(--white); box-shadow: 0 2px 0 rgba(0,0,0,0.05); }
-.wrap { max-width: 1180px; margin: 24px auto; padding: 0 18px; width: 100%; }
-.welcome { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+.wrap { max-width: 1240px; margin: 24px auto; padding: 0 18px; width: 100%; }
+.welcome { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 .welcome h2 { margin: 0 0 6px; font-size: 28px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.club { overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; }
-.club:hover { transform: translateY(-5px) rotate(1deg); }
-.clubcover { height: 160px; background-size: cover; background-position: center; background-color: #eef4ff; position: relative; border-radius: 16px; margin-bottom: 12px;}
-.clubhead { padding: 0 12px; }
-.club h3 { margin: 0 0 8px; font-size: 20px; }
-.clubbody { padding: 0 12px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.club { overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; position: relative; }
+.club:hover { transform: translateY(-4px); }
+.clubcover { height: 150px; background-size: cover; background-position: center; background-color: #eef4ff; position: relative; border-radius: 16px; margin-bottom: 12px; }
+.clubhead { padding: 0 10px; display: flex; flex-direction: column; gap: 4px; }
+.club h3 { margin: 0; font-size: 19px; line-height: 1.3; }
+.clubbody { padding: 0 10px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .clubfoot { padding: 12px; background: #fafafa; border-radius: 16px; display: flex; flex-direction: column; gap: 8px; border: 2px dashed #eceff1; }
-.clubfoot button { width: 100%; font-size: 16px; }
-.tag { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: bold; background: var(--white); color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 2px solid var(--white); }
+.clubfoot button { width: 100%; font-size: 15px; }
+.tag { display: inline-flex; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: bold; background: var(--white); color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 2px solid var(--white); align-items: center; gap: 4px; }
 .tag.full { background: var(--pink); color: var(--white); }
-.meta { font-size: 15px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.meta { font-size: 14px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 .progress { height: 10px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin-top: 4px; border: 2px solid var(--white); box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
 .progress-bar { height: 100%; background: var(--pastel-blue); transition: width 0.3s; }
+.progress-bar.success { background: var(--green); }
+.progress-bar.danger { background: var(--pink); }
 .panel { padding: 24px; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; min-width: 640px; }
-th, td { text-align: left; padding: 14px 10px; border-bottom: 2px dashed var(--bg); font-size: 15px; }
+th, td { text-align: left; padding: 12px 10px; border-bottom: 2px dashed var(--bg); font-size: 15px; }
 th { color: var(--muted); font-weight: bold; }
 .login { max-width: 420px; margin: 60px auto; padding: 0 18px; width: 100%; }
 .loginbox { padding: 36px; text-align: center; }
@@ -81,8 +101,35 @@ input:checked + .slider:before { transform: translateX(26px); }
 .formgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
 .formgrid label { display: flex; flex-direction: column; gap: 8px; font-weight: bold; color: var(--muted); }
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(55,71,79,0.6); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px; }
-.modal-content { max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-content { max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; }
 #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.92); z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; color: #1976d2; padding: 20px; text-align: center; }
+
+/* 🌟 สไตล์ระบบแดชบอร์ดแบ่ง 2 ฝั่ง (ว่าง vs เต็ม) */
+.dashboard-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.stat-card { padding: 16px 20px; border-radius: 20px; text-align: center; background: var(--white); border: 2px solid transparent; }
+.stat-card h1 { margin: 0; font-size: 34px; line-height: 1.1; }
+.stat-card p { margin: 6px 0 0; color: var(--muted); font-size: 14px; font-weight: bold; }
+
+.split-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media(max-width: 960px) { .split-dashboard { grid-template-columns: 1fr; } }
+
+.col-panel { padding: 20px; border-radius: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 300px; }
+.col-panel.available { background: #f1f8e9; border: 3px solid #c8e6c9; }
+.col-panel.full { background: #fce4ec; border: 3px solid #f8bbd0; }
+
+.col-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px dashed rgba(0,0,0,0.1); margin-bottom: 4px; flex-wrap: wrap; gap: 8px; }
+.col-title { font-size: 22px; font-weight: bold; margin: 0; display: flex; align-items: center; gap: 8px; }
+.col-title.available { color: var(--green-dark); }
+.col-title.full { color: var(--pink-dark); }
+
+.level-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; width: fit-content; }
+.level-badge.junior { background: #e3f2fd; color: #1565c0; border: 1.5px solid #bbdefb; }
+.level-badge.senior { background: #f3e5f5; color: #7b1fa2; border: 1.5px solid #e1bee7; }
+
+.filter-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-btn { background: var(--white); color: var(--muted); border: 2px solid #cfd8dc; padding: 8px 16px; border-radius: 14px; font-size: 14px; cursor: pointer; transition: 0.15s; font-weight: bold; }
+.filter-btn:hover { border-color: var(--pastel-blue); }
+.filter-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
 
 @media(max-width: 768px) {
   .admin-layout { flex-direction: column; }
@@ -128,12 +175,15 @@ input:checked + .slider:before { transform: translateX(26px); }
   <div class="welcome">
     <div>
       <h2 id="studentWelcome">ยินดีต้อนรับ</h2>
-      <div style="color:var(--muted); font-size: 18px;">เลือกชุมนุมที่ใช่ สำหรับ <strong id="studentTerm" style="color:var(--pink)">ภาคเรียน</strong></div>
+      <div style="color:var(--muted); font-size: 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+        <span>เลือกชุมนุมสำหรับ <strong id="studentTerm" style="color:var(--pink)">ภาคเรียน</strong></span>
+        <span id="studentLevelBadge"></span>
+      </div>
     </div>
     <div id="systemStatusBadge"></div>
   </div>
   <nav id="studentTabs" class="tabs">
-    <button class="active" onclick="setStudentTab('clubs')" id="tab-clubs">🎨 เลือกชุมนุม</button>
+    <button class="active" onclick="setStudentTab('clubs')" id="tab-clubs">🧭 แดชบอร์ด & เลือกชุมนุม</button>
     <button onclick="setStudentTab('my')" id="tab-my">💖 ชุมนุมของฉัน</button>
   </nav>
   <section id="studentContent"></section>
@@ -141,7 +191,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 
 <main id="adminAppView" class="admin-layout hidden">
   <aside class="sidebar">
-    <div class="side-item sticker active" onclick="setAdminTab('overview')" id="nav-overview">📊 ภาพรวมระบบ</div>
+    <div class="side-item sticker active" onclick="setAdminTab('overview')" id="nav-overview">📊 แดชบอร์ดภาพรวม</div>
     <div class="side-item sticker" onclick="setAdminTab('students')" id="nav-students">👥 รายชื่อและนำเข้า</div>
     <div class="side-item sticker" onclick="setAdminTab('manage')" id="nav-manage">📚 จัดการชุมนุม</div>
     <div class="side-item sticker" onclick="setAdminTab('settings')" id="nav-settings">⚙️ ตั้งค่าระบบ</div>
@@ -157,14 +207,24 @@ input:checked + .slider:before { transform: translateX(26px); }
     <div class="formgrid" style="display:flex; flex-direction:column; gap:12px;">
       <input type="hidden" id="editClubId">
       <label>ชื่อชุมนุม <input class="field" id="editClubName" required></label>
-      <label>จำนวนครูผู้ดูแล 
-        <select class="field" id="editClubTeacherCount" onchange="onEditTeacherCountChange()">
-          <option value="1">1 คน (รับ 30 คน)</option>
-          <option value="2">2 คน (รับ 60 คน)</option>
+      
+      <label>ระดับชั้น 
+        <select class="field" id="editClubLevel" onchange="onEditClubLevelOrTeacherChange()">
+          <option value="junior">ม.ต้น (ม.1 - ม.3)</option>
+          <option value="senior">ม.ปลาย (ม.4 - ม.6)</option>
         </select>
       </label>
-      <label id="editClubTeacher1Label"><span id="editClubTeacher1Text">ครูประจำชุมนุม</span> <input class="field" id="editClubTeacher1" required placeholder="พิมพ์ชื่อครู"></label>
+
+      <label>จำนวนครูผู้ดูแล 
+        <select class="field" id="editClubTeacherCount" onchange="onEditClubLevelOrTeacherChange()">
+          <option value="1" id="editClubTCount1Opt">1 คน (รับ 30 คน)</option>
+          <option value="2" id="editClubTCount2Opt">2 คน (รับ 60 คน)</option>
+        </select>
+      </label>
+
+      <label id="editClubTeacher1Label"><span id="editClubTeacher1Text">ครูประจำชุมนุมคนที่ 1</span> <input class="field" id="editClubTeacher1" required placeholder="พิมพ์ชื่อครูคนที่ 1"></label>
       <label id="editClubTeacher2Label" class="hidden">ครูประจำชุมนุมคนที่ 2 <input class="field" id="editClubTeacher2" placeholder="พิมพ์ชื่อครูคนที่ 2"></label>
+      
       <label>จำนวนรับ (คน) <input class="field" type="number" id="editClubCapacity" readonly style="background:#f0f4f8; cursor:not-allowed;"></label>
       <label>เปลี่ยนรูปภาพปก <input class="field" type="file" id="editClubImageFile" accept="image/*"></label>
     </div>
@@ -184,8 +244,35 @@ let currentRole = 'student';
 let currentUser = null;
 let isSubmitting = false;
 
+// Filter state สำหรับหน้าแอดมิน
+let adminOverviewLevelFilter = 'all'; // 'all', 'junior', 'senior'
+let adminManageLevelFilter = 'all';
+
+/**
+ * ฟังก์ชันตรวจสอบระดับชั้นของนักเรียนจากห้องเรียน (ม.ต้น vs ม.ปลาย)
+ */
+function getStudentLevel(studentClass) {
+  if (!studentClass) return 'junior';
+  const c = String(studentClass).trim().toLowerCase();
+  if (/^(ม\.?\s*[4-6]|[4-6]\/)/.test(c) || c.includes('ม.4') || c.includes('ม.5') || c.includes('ม.6') || c.includes('ม4') || c.includes('ม5') || c.includes('ม6') || c.includes('4/') || c.includes('5/') || c.includes('6/')) {
+    return 'senior';
+  }
+  return 'junior';
+}
+
+/**
+ * คำนวณจำนวนรับตามระดับชั้นและจำนวนครู
+ * ม.ต้น: ครู 1 คน = 30, ครู 2 คน = 60
+ * ม.ปลาย: ครู 1 คน = 25, ครู 2 คน = 50
+ */
+function getCapacityForLevel(level, teacherCount) {
+  if (level === 'senior') {
+    return teacherCount === '2' ? 50 : 25;
+  }
+  return teacherCount === '2' ? 60 : 30;
+}
+
 window.onload = async () => {
-  // ลองโหลดข้อมูลจาก LocalStorage ก่อนเพื่อให้แสดงผลทันใจ
   try {
     const cachedStr = localStorage.getItem('satit_clubs_db');
     if (cachedStr) {
@@ -201,7 +288,6 @@ window.onload = async () => {
     }
   } catch (e) {}
 
-  // ดึงข้อมูลสดใหม่ล่าสุดจากเซิร์ฟเวอร์
   let success = await apiCall('getData', {});
   if(success) {
      initLogo();
@@ -218,9 +304,6 @@ window.onload = async () => {
   }
 };
 
-/**
- * ฟังก์ชันเชื่อมต่อ API พร้อมระบบ Auto-retry และ Random Jitter รองรับ 1,500 คนเข้าใช้งานพร้อมกัน
- */
 async function apiCall(action, payload, maxRetries = 4) {
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
@@ -246,9 +329,8 @@ async function apiCall(action, payload, maxRetries = 4) {
         return true;
       }
 
-      // หากคิวเต็มชั่วคราว (busy) ให้ลองใหม่อัตโนมัติด้วย Jitter Delay
       if (json.busy && attempt < maxRetries) {
-        const jitter = Math.floor(Math.random() * 1200) + 800; // สุ่มรอ 800 - 2000 ms
+        const jitter = Math.floor(Math.random() * 1200) + 800;
         await new Promise(r => setTimeout(r, jitter));
         continue;
       }
@@ -307,7 +389,9 @@ function login() {
     const student = db.students.find(s => String(s.id) === String(sId));
     if (!student) return alert('ไม่พบรหัสนักเรียนนี้ในระบบ (หากเพิ่งเพิ่มข้อมูล กรุณารีเฟรชหน้าเว็บ)');
     
-    currentUser = { role: 'student', data: student };
+    const studentLevel = getStudentLevel(student.class);
+    currentUser = { role: 'student', data: student, level: studentLevel };
+
     document.getElementById('loginView').classList.add('hidden');
     document.getElementById('studentAppView').classList.remove('hidden');
     document.getElementById('logoutBtn').classList.remove('hidden');
@@ -315,6 +399,14 @@ function login() {
     document.getElementById('userPill').textContent = `🎒 ${student.name} (${student.class})`;
     document.getElementById('studentWelcome').textContent = `สวัสดี, ${student.prefix}${student.name} ✨`;
     document.getElementById('studentTerm').textContent = db.settings.term;
+    
+    const badgeEl = document.getElementById('studentLevelBadge');
+    if (studentLevel === 'senior') {
+      badgeEl.innerHTML = `<span class="level-badge senior">🎓 ระดับชั้น ม.ปลาย</span>`;
+    } else {
+      badgeEl.innerHTML = `<span class="level-badge junior">🎒 ระดับชั้น ม.ต้น</span>`;
+    }
+
     renderSystemBadge();
     setStudentTab('clubs');
 
@@ -362,37 +454,124 @@ function setStudentTab(tab) {
   else if (tab === 'my') c.innerHTML = renderMyClub();
 }
 
+/**
+ * แสดงแดชบอร์ดกลางและรายการชุมนุมสำหรับนักเรียน
+ * - กรองแสดงเฉพาะระดับชั้นของนักเรียน (ม.ต้น / ม.ปลาย)
+ * - แบ่ง 2 ฝั่งชัดเจน: ฝั่งชุมนุมที่ว่าง vs ฝั่งชุมนุมที่เต็ม
+ */
 function renderStudentClubs() {
+  const studentLevel = currentUser.level || getStudentLevel(currentUser.data.class);
   const myEnroll = db.enrollments.find(e => e.student_id == currentUser.data.id);
-  let html = `<div class="grid">`;
-  
-  db.clubs.forEach(club => {
-    const isFull = club.current_enrolled >= club.capacity;
+
+  // กรองเฉพาะระดับชั้นของนักเรียน
+  const levelClubs = db.clubs.filter(c => {
+    const cLvl = c.level || (c.capacity === 25 || c.capacity === 50 ? 'senior' : 'junior');
+    return cLvl === studentLevel;
+  });
+
+  const availableClubs = levelClubs.filter(c => c.current_enrolled < c.capacity);
+  const fullClubs = levelClubs.filter(c => c.current_enrolled >= c.capacity);
+  const totalRemainingSeats = availableClubs.reduce((sum, c) => sum + Math.max(0, c.capacity - c.current_enrolled), 0);
+  const levelText = studentLevel === 'senior' ? 'มัธยมศึกษาตอนปลาย (ม.4 - ม.6)' : 'มัธยมศึกษาตอนต้น (ม.1 - ม.3)';
+
+  function renderClubCard(club, isFull) {
     const isMine = myEnroll && myEnroll.club_id == club.id;
     const percent = Math.min(100, (club.current_enrolled / club.capacity) * 100);
+    const seatsLeft = Math.max(0, club.capacity - club.current_enrolled);
     
     let btnHtml = '';
-    if (!db.settings.is_open) btnHtml = `<button class="secondary" disabled>ปิดรับสมัคร</button>`;
+    if (!db.settings.is_open) btnHtml = `<button class="secondary" disabled>🔒 ปิดรับสมัคร</button>`;
     else if (isMine) btnHtml = `<button class="success" disabled>✅ ชุมนุมของคุณ</button>`;
     else if (myEnroll) btnHtml = `<button class="secondary" disabled>คุณเลือกชุมนุมแล้ว</button>`;
-    else if (isFull) btnHtml = `<button class="danger" disabled>ที่นั่งเต็มแล้ว</button>`;
+    else if (isFull) btnHtml = `<button class="danger" disabled>❌ ที่นั่งเต็มแล้ว</button>`;
     else btnHtml = `<button class="primary" onclick="enrollClub(${club.id})">💖 สมัครชุมนุมนี้</button>`;
 
-    html += `
+    return `
       <article class="club sticker">
         <div class="clubcover" style="background-image:url('${club.image}')">
-           ${isFull ? '<span class="tag full" style="position:absolute; top:10px; right:10px;">เต็มแล้ว</span>' : ''}
+          <span class="level-badge ${club.level || 'junior'}" style="position:absolute; top:10px; left:10px;">
+            ${(club.level === 'senior' || club.capacity === 25 || club.capacity === 50) ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}
+          </span>
+          ${isFull 
+            ? '<span class="tag full" style="position:absolute; top:10px; right:10px;">🔴 เต็มแล้ว</span>' 
+            : `<span class="tag" style="position:absolute; top:10px; right:10px; background:var(--green); color:white;">🟢 ว่างอีก ${seatsLeft} ที่</span>`}
         </div>
-        <div class="clubhead"><h3>${club.name}</h3></div>
+        <div class="clubhead">
+          <h3>${club.name}</h3>
+        </div>
         <div class="clubbody">
           <div class="meta">👩‍🏫 ${club.teacher}</div>
-          <div class="meta" style="margin-top:4px">👥 สมัครแล้ว ${club.current_enrolled}/${club.capacity}</div>
-          <div class="progress"><div class="progress-bar ${isFull?'danger':''}" style="width:${percent}%"></div></div>
+          <div class="meta" style="margin-top:2px">👥 สมัครแล้ว <b>${club.current_enrolled}</b> / ${club.capacity} คน</div>
+          <div class="progress">
+            <div class="progress-bar ${isFull ? 'danger' : 'success'}" style="width:${percent}%"></div>
+          </div>
         </div>
         <div class="clubfoot">${btnHtml}</div>
       </article>`;
-  });
-  return html + `</div>`;
+  }
+
+  let html = `
+    <!-- 📊 แถบสรุปแดชบอร์ดด้านบน -->
+    <div class="dashboard-stat-grid">
+      <div class="stat-card sticker" style="border-top: 4px solid var(--green);">
+        <h1 style="color:var(--green-dark)">${availableClubs.length}</h1>
+        <p>🟢 ชุมนุมที่ยังมีที่ว่าง (เหลือรวม ${totalRemainingSeats} ที่นั่ง)</p>
+      </div>
+      <div class="stat-card sticker" style="border-top: 4px solid var(--pink);">
+        <h1 style="color:var(--pink-dark)">${fullClubs.length}</h1>
+        <p>🔴 ชุมนุมที่เต็มแล้ว</p>
+      </div>
+      <div class="stat-card sticker" style="border-top: 4px solid var(--pastel-blue);">
+        <h1 style="color:var(--blue-dark)">${levelClubs.length}</h1>
+        <p>📚 ชุมนุมทั้งหมดสำหรับ ${studentLevel === 'senior' ? 'ม.ปลาย' : 'ม.ต้น'}</p>
+      </div>
+    </div>
+
+    <!-- 🧭 แดชบอร์ดกลางแบ่ง 2 ฝั่ง (ว่าง vs เต็ม) -->
+    <div class="split-dashboard">
+      
+      <!-- ฝั่งซ้าย: ชุมนุมที่ยังมีที่ว่าง -->
+      <div class="col-panel available sticker">
+        <div class="col-header">
+          <div class="col-title available">
+            <span>🟢 ชุมนุมที่ยังมีที่นั่งว่าง</span>
+            <span class="tag" style="background:var(--green); color:white; font-size:14px;">${availableClubs.length} ชุมนุม</span>
+          </div>
+          <small style="color:var(--green-dark); font-weight:bold;">สามารถกดสมัครได้ทันที</small>
+        </div>
+
+        ${availableClubs.length > 0 
+          ? `<div class="grid">${availableClubs.map(c => renderClubCard(c, false)).join('')}</div>` 
+          : `<div style="text-align:center; padding: 40px 10px; color:var(--muted); font-size:17px;">
+               <h3>🥺 ขณะนี้ไม่มีชุมนุมที่ว่างในระดับชั้นของคุณ</h3>
+               <p>ชุมนุมทั้งหมดเต็มจำนวนแล้ว</p>
+             </div>`
+        }
+      </div>
+
+      <!-- ฝั่งขวา: ชุมนุมที่เต็มแล้ว -->
+      <div class="col-panel full sticker">
+        <div class="col-header">
+          <div class="col-title full">
+            <span>🔴 ชุมนุมที่เต็มแล้ว</span>
+            <span class="tag full" style="font-size:14px;">${fullClubs.length} ชุมนุม</span>
+          </div>
+          <small style="color:var(--pink-dark); font-weight:bold;">รับครบตามจำนวนแล้ว</small>
+        </div>
+
+        ${fullClubs.length > 0 
+          ? `<div class="grid">${fullClubs.map(c => renderClubCard(c, true)).join('')}</div>` 
+          : `<div style="text-align:center; padding: 40px 10px; color:var(--muted); font-size:17px;">
+               <h3>✨ ยังไม่มีชุมนุมใดที่เต็ม</h3>
+               <p>ทุกชุมนุมยังมีที่นั่งว่าง รีบเลือกชุมนุมที่ชอบเลย!</p>
+             </div>`
+        }
+      </div>
+
+    </div>
+  `;
+
+  return html;
 }
 
 async function enrollClub(id) {
@@ -401,7 +580,12 @@ async function enrollClub(id) {
   if (confirm('ยืนยันสมัครชุมนุมนี้ใช่หรือไม่?')) {
     isSubmitting = true;
     try {
-      let success = await apiCall('enroll', { student_id: currentUser.data.id, club_id: id });
+      const studentLevel = currentUser.level || getStudentLevel(currentUser.data.class);
+      let success = await apiCall('enroll', { 
+        student_id: currentUser.data.id, 
+        club_id: id,
+        student_level: studentLevel
+      });
       if (success) setStudentTab('my');
     } finally {
       isSubmitting = false;
@@ -442,12 +626,20 @@ function renderMyClub() {
     cancelBtnHtml = `<button class="danger" onclick="cancelClub()">🗑️ ยกเลิกชุมนุม (เปลี่ยนใจได้อีก 1 ครั้ง)</button>`;
   }
 
+  const isSenior = (club.level === 'senior' || club.capacity === 25 || club.capacity === 50);
+
   return `
-    <div class="panel sticker" style="max-width:500px; margin:0 auto; text-align:center;">
+    <div class="panel sticker" style="max-width:520px; margin:0 auto; text-align:center;">
       <h3 style="color:var(--green)">✅ สมัครสำเร็จ</h3>
-      <img src="${club.image}" style="width:100%; height:180px; object-fit:cover; border-radius:16px; margin:16px 0; border:4px solid var(--white); box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-      <h2>${club.name}</h2>
-      <p style="color:var(--muted); font-size:18px;">ดูแลโดย: ${club.teacher}</p>
+      <div style="position:relative; display:inline-block; width:100%;">
+        <img src="${club.image}" style="width:100%; height:200px; object-fit:cover; border-radius:18px; margin:16px 0; border:4px solid var(--white); box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+        <span class="level-badge ${isSenior ? 'senior' : 'junior'}" style="position:absolute; bottom:26px; right:12px; font-size:14px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+          ${isSenior ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}
+        </span>
+      </div>
+      <h2 style="margin:4px 0 8px;">${club.name}</h2>
+      <p style="color:var(--muted); font-size:18px; margin:0;">👩‍🏫 ดูแลโดย: ${club.teacher}</p>
+      <p style="color:var(--muted); font-size:15px; margin:6px 0 0;">👥 ยอดรับทั้งหมด: ${club.capacity} คน</p>
       <div style="margin-top:24px;">
         ${cancelBtnHtml}
       </div>
@@ -464,27 +656,140 @@ function setAdminTab(tab) {
   else if (tab === 'settings') c.innerHTML = renderAdminSettings();
 }
 
+/**
+ * แดชบอร์ดกลางฝั่งผู้ดูแลระบบ (Admin Overview Dashboard)
+ * - สถิติภาพรวม
+ * - ตัวกรองระดับชั้น (ทั้งหมด / ม.ต้น / ม.ปลาย)
+ * - แดชบอร์ดแบ่ง 2 ฝั่งชัดเจน: ชุมนุมที่ว่าง vs ชุมนุมที่เต็ม
+ */
 function renderAdminOverview() {
+  let clubs = db.clubs;
+  if (adminOverviewLevelFilter !== 'all') {
+    clubs = clubs.filter(c => {
+      const lvl = c.level || (c.capacity === 25 || c.capacity === 50 ? 'senior' : 'junior');
+      return lvl === adminOverviewLevelFilter;
+    });
+  }
+
+  const availableClubs = clubs.filter(c => c.current_enrolled < c.capacity);
+  const fullClubs = clubs.filter(c => c.current_enrolled >= c.capacity);
+
+  const totalSeats = clubs.reduce((sum, c) => sum + c.capacity, 0);
+  const enrolledSeats = clubs.reduce((sum, c) => sum + c.current_enrolled, 0);
+  const remainingSeats = Math.max(0, totalSeats - enrolledSeats);
+
   return `
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 24px;">
-      <div class="panel sticker" style="text-align:center">
-        <h1 style="margin:0; font-size: 40px; color:var(--pastel-blue)">${db.students.length}</h1>
-        <p style="margin:0; color:var(--muted)">นักเรียนทั้งหมด</p>
-      </div>
-      <div class="panel sticker" style="text-align:center">
-        <h1 style="margin:0; font-size: 40px; color:var(--green)">${db.enrollments.length}</h1>
-        <p style="margin:0; color:var(--muted)">เลือกชุมนุมแล้ว</p>
+    <!-- ตัวกรองระดับชั้นของแดชบอร์ด -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+      <h2 style="margin:0;">📊 แดชบอร์ดภาพรวมชุมนุม</h2>
+      <div class="filter-btn-group" style="margin:0;">
+        <button class="filter-btn ${adminOverviewLevelFilter === 'all' ? 'active' : ''}" onclick="setAdminOverviewFilter('all')">🏫 ทุกระดับชั้น (${db.clubs.length})</button>
+        <button class="filter-btn ${adminOverviewLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminOverviewFilter('junior')">🎒 ม.ต้น (${db.clubs.filter(c => (c.level||'junior')==='junior' && c.capacity!==25 && c.capacity!==50).length})</button>
+        <button class="filter-btn ${adminOverviewLevelFilter === 'senior' ? 'active' : ''}" onclick="setAdminOverviewFilter('senior')">🎓 ม.ปลาย (${db.clubs.filter(c => c.level==='senior' || c.capacity===25 || c.capacity===50).length})</button>
       </div>
     </div>
-    <div class="panel sticker">
-      <h3>สถานะชุมนุม</h3>
-      <div style="overflow-x:auto;">
-        <table>
-          <tr><th>ชื่อชุมนุม</th><th>ครูประจำชุมนุม</th><th>ยอดสมัคร / จำนวนรับ</th></tr>
-          ${db.clubs.map(c => `<tr><td>${c.name}</td><td>${c.teacher}</td><td><b style="color:${c.current_enrolled>=c.capacity?'var(--pink)':'var(--green)'}">${c.current_enrolled}</b> / ${c.capacity}</td></tr>`).join('')}
-        </table>
+
+    <!-- การ์ดตัวเลขสรุป -->
+    <div class="dashboard-stat-grid">
+      <div class="stat-card sticker">
+        <h1 style="color:var(--pastel-blue)">${db.students.length}</h1>
+        <p>นักเรียนทั้งหมด</p>
       </div>
-    </div>`;
+      <div class="stat-card sticker">
+        <h1 style="color:var(--green)">${db.enrollments.length}</h1>
+        <p>เลือกชุมนุมแล้ว</p>
+      </div>
+      <div class="stat-card sticker" style="border-top: 4px solid var(--green);">
+        <h1 style="color:var(--green-dark)">${availableClubs.length}</h1>
+        <p>🟢 ชุมนุมที่ว่าง (เหลือ ${remainingSeats} ที่)</p>
+      </div>
+      <div class="stat-card sticker" style="border-top: 4px solid var(--pink);">
+        <h1 style="color:var(--pink-dark)">${fullClubs.length}</h1>
+        <p>🔴 ชุมนุมที่เต็มแล้ว</p>
+      </div>
+    </div>
+
+    <!-- 🧭 แดชบอร์ดกลางแบ่ง 2 ฝั่ง (ฝั่งว่าง vs ฝั่งเต็ม) -->
+    <div class="split-dashboard">
+      
+      <!-- ฝั่งซ้าย: ชุมนุมที่ยังมีที่ว่าง -->
+      <div class="col-panel available sticker">
+        <div class="col-header">
+          <div class="col-title available">
+            <span>🟢 ชุมนุมที่ยังมีที่นั่งว่าง (${availableClubs.length})</span>
+          </div>
+          <span class="tag" style="background:var(--green); color:white;">เปิดรับอยู่</span>
+        </div>
+        
+        ${availableClubs.length > 0 ? `
+          <div style="overflow-x:auto;">
+            <table>
+              <tr>
+                <th>ชื่อชุมนุม</th>
+                <th>ระดับชั้น</th>
+                <th>ครูประจำชุมนุม</th>
+                <th>ยอดรับ</th>
+                <th>ที่นั่งคงเหลือ</th>
+              </tr>
+              ${availableClubs.map(c => {
+                const isSenior = (c.level === 'senior' || c.capacity === 25 || c.capacity === 50);
+                const left = c.capacity - c.current_enrolled;
+                return `
+                  <tr>
+                    <td><b>${c.name}</b></td>
+                    <td><span class="level-badge ${isSenior ? 'senior' : 'junior'}">${isSenior ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}</span></td>
+                    <td>${c.teacher}</td>
+                    <td><b>${c.current_enrolled}</b> / ${c.capacity}</td>
+                    <td><b style="color:var(--green-dark)">🟢 ว่างอีก ${left} ที่</b></td>
+                  </tr>`;
+              }).join('')}
+            </table>
+          </div>
+        ` : `<div style="text-align:center; padding:30px; color:var(--muted);">ไม่มีชุมนุมที่ว่าง</div>`}
+      </div>
+
+      <!-- ฝั่งขวา: ชุมนุมที่เต็มแล้ว -->
+      <div class="col-panel full sticker">
+        <div class="col-header">
+          <div class="col-title full">
+            <span>🔴 ชุมนุมที่เต็มแล้ว (${fullClubs.length})</span>
+          </div>
+          <span class="tag full">เต็ม 100%</span>
+        </div>
+        
+        ${fullClubs.length > 0 ? `
+          <div style="overflow-x:auto;">
+            <table>
+              <tr>
+                <th>ชื่อชุมนุม</th>
+                <th>ระดับชั้น</th>
+                <th>ครูประจำชุมนุม</th>
+                <th>ยอดรับ</th>
+                <th>สถานะ</th>
+              </tr>
+              ${fullClubs.map(c => {
+                const isSenior = (c.level === 'senior' || c.capacity === 25 || c.capacity === 50);
+                return `
+                  <tr>
+                    <td><b>${c.name}</b></td>
+                    <td><span class="level-badge ${isSenior ? 'senior' : 'junior'}">${isSenior ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}</span></td>
+                    <td>${c.teacher}</td>
+                    <td><b style="color:var(--pink-dark)">${c.current_enrolled} / ${c.capacity}</b></td>
+                    <td><span class="tag full" style="font-size:12px;">เต็มแล้ว</span></td>
+                  </tr>`;
+              }).join('')}
+            </table>
+          </div>
+        ` : `<div style="text-align:center; padding:30px; color:var(--muted);">ยังไม่มีชุมนุมที่เต็ม</div>`}
+      </div>
+
+    </div>
+  `;
+}
+
+function setAdminOverviewFilter(lvl) {
+  adminOverviewLevelFilter = lvl;
+  setAdminTab('overview');
 }
 
 function importExcel(event) {
@@ -534,7 +839,8 @@ function buildAdminStudentTable(filterClass) {
   if(filterClass !== 'all') list = list.filter(s => s.class === filterClass);
   let rows = list.map(s => {
     const enroll = db.enrollments.find(e => e.student_id == s.id);
-    const clubName = enroll ? db.clubs.find(c => c.id == enroll.club_id)?.name : '<span style="color:var(--pink)">ยังไม่เลือก</span>';
+    const club = enroll ? db.clubs.find(c => c.id == enroll.club_id) : null;
+    const clubName = club ? club.name : '<span style="color:var(--pink)">ยังไม่เลือก</span>';
     return `<tr><td>${s.id}</td><td>${s.prefix}${s.name} ${s.surname}</td><td>${s.class}</td><td>${clubName}</td></tr>`;
   }).join('');
   return `<table id="exportTable"><tr><th>รหัสนักเรียน</th><th>ชื่อ - นามสกุล</th><th>ชั้นเรียน</th><th>ชุมนุมที่เลือก</th></tr>${rows}</table>`;
@@ -548,20 +854,44 @@ function exportToExcel() {
   XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('exportTable'), {sheet: "รายชื่อชุมนุม"}), "ข้อมูลชุมนุมรายห้อง.xlsx");
 }
 
+/**
+ * หน้าจัดการชุมนุม (เพิ่ม/แก้ไขชุมนุม)
+ * ปรับเกณฑ์:
+ * ม.ต้น: ครู 1 คน = 30, ครู 2 คน = 60
+ * ม.ปลาย: ครู 1 คน = 25, ครู 2 คน = 50
+ */
 function renderAdminManage() {
+  let clubs = db.clubs;
+  if (adminManageLevelFilter !== 'all') {
+    clubs = clubs.filter(c => {
+      const lvl = c.level || (c.capacity === 25 || c.capacity === 50 ? 'senior' : 'junior');
+      return lvl === adminManageLevelFilter;
+    });
+  }
+
   return `
     <div class="panel sticker">
       <h3>➕ เพิ่มชุมนุมใหม่</h3>
       <div class="formgrid">
-        <label>ชื่อชุมนุม <input class="field" id="newClubName" required placeholder="เช่น ชุมนุมดนตรี"></label>
-        <label>จำนวนครูผู้ดูแล 
-          <select class="field" id="newClubTeacherCount" onchange="onNewTeacherCountChange()">
-            <option value="1">1 คน (รับ 30 คน)</option>
-            <option value="2">2 คน (รับ 60 คน)</option>
+        <label>ชื่อชุมนุม <input class="field" id="newClubName" required placeholder="เช่น ชุมนุมดนตรีสากล"></label>
+        
+        <label>ระดับชั้น 
+          <select class="field" id="newClubLevel" onchange="onNewClubLevelOrTeacherChange()">
+            <option value="junior">ม.ต้น (ม.1 - ม.3)</option>
+            <option value="senior">ม.ปลาย (ม.4 - ม.6)</option>
           </select>
         </label>
-        <label id="newClubTeacher1Label"><span id="newClubTeacher1Text">ครูประจำชุมนุม</span> <input class="field" id="newClubTeacher1" required placeholder="พิมพ์ชื่อครู"></label>
+
+        <label>จำนวนครูผู้ดูแล 
+          <select class="field" id="newClubTeacherCount" onchange="onNewClubLevelOrTeacherChange()">
+            <option value="1" id="newClubTCount1Opt">1 คน (รับ 30 คน)</option>
+            <option value="2" id="newClubTCount2Opt">2 คน (รับ 60 คน)</option>
+          </select>
+        </label>
+
+        <label id="newClubTeacher1Label"><span id="newClubTeacher1Text">ครูประจำชุมนุมคนที่ 1</span> <input class="field" id="newClubTeacher1" required placeholder="พิมพ์ชื่อครูคนที่ 1"></label>
         <label id="newClubTeacher2Label" class="hidden">ครูประจำชุมนุมคนที่ 2 <input class="field" id="newClubTeacher2" placeholder="พิมพ์ชื่อครูคนที่ 2"></label>
+        
         <label>จำนวนรับ (คน) <input class="field" type="number" id="newClubCapacity" readonly value="30" style="background:#f0f4f8; cursor:not-allowed;"></label>
         <label>อัปโหลดรูปภาพปก <input type="file" class="field" id="newClubImageFile" accept="image/*"></label>
       </div>
@@ -569,14 +899,34 @@ function renderAdminManage() {
     </div>
     
     <div class="panel sticker">
-      <h3>📚 รายการชุมนุมทั้งหมด</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+        <h3 style="margin:0;">📚 รายการชุมนุมทั้งหมด</h3>
+        <div class="filter-btn-group" style="margin:0;">
+          <button class="filter-btn ${adminManageLevelFilter === 'all' ? 'active' : ''}" onclick="setAdminManageFilter('all')">ทั้งหมด (${db.clubs.length})</button>
+          <button class="filter-btn ${adminManageLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminManageFilter('junior')">🎒 ม.ต้น</button>
+          <button class="filter-btn ${adminManageLevelFilter === 'senior' ? 'active' : ''}" onclick="setAdminManageFilter('senior')">🎓 ม.ปลาย</button>
+        </div>
+      </div>
+
       <div style="overflow-x:auto;">
         <table>
-          <tr><th>รูป</th><th>ชื่อชุมนุม</th><th>ครูประจำชุมนุม</th><th>ยอดรับ</th><th>จัดการ</th></tr>
-          ${db.clubs.map(c => `
+          <tr>
+            <th>รูป</th>
+            <th>ชื่อชุมนุม</th>
+            <th>ระดับชั้น</th>
+            <th>ครูประจำชุมนุม</th>
+            <th>ยอดรับ</th>
+            <th>จัดการ</th>
+          </tr>
+          ${clubs.map(c => {
+            const isSenior = (c.level === 'senior' || c.capacity === 25 || c.capacity === 50);
+            return `
             <tr>
-              <td><img src="${c.image || 'https://via.placeholder.com/150'}" style="width:60px; height:60px; object-fit:cover; border-radius:12px;"></td>
-              <td>${c.name}</td><td>${c.teacher}</td><td>${c.current_enrolled}/${c.capacity}</td>
+              <td><img src="${c.image || 'https://via.placeholder.com/150'}" style="width:55px; height:55px; object-fit:cover; border-radius:12px;"></td>
+              <td><b>${c.name}</b></td>
+              <td><span class="level-badge ${isSenior ? 'senior' : 'junior'}">${isSenior ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}</span></td>
+              <td>${c.teacher}</td>
+              <td><b style="color:${c.current_enrolled>=c.capacity?'var(--pink)':'var(--green)'}">${c.current_enrolled}</b> / ${c.capacity} คน</td>
               <td>
                 <div style="display:flex; gap:6px;">
                   <button class="secondary" style="padding:6px 12px; font-size:14px" onclick="openEditModal(${c.id})">แก้ไข</button>
@@ -584,27 +934,47 @@ function renderAdminManage() {
                 </div>
               </td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </table>
       </div>
     </div>
   `;
 }
 
-function onNewTeacherCountChange() {
+function setAdminManageFilter(lvl) {
+  adminManageLevelFilter = lvl;
+  setAdminTab('manage');
+}
+
+/**
+ * จัดการเมื่อเปลี่ยนระดับชั้นหรือจำนวนครูในฟอร์มเพิ่มชุมนุมใหม่
+ */
+function onNewClubLevelOrTeacherChange() {
+  const level = document.getElementById('newClubLevel').value;
   const count = document.getElementById('newClubTeacherCount').value;
   const capInput = document.getElementById('newClubCapacity');
   const t2Label = document.getElementById('newClubTeacher2Label');
   const t1Text = document.getElementById('newClubTeacher1Text');
   const t1Input = document.getElementById('newClubTeacher1');
 
+  const opt1 = document.getElementById('newClubTCount1Opt');
+  const opt2 = document.getElementById('newClubTCount2Opt');
+
+  if (level === 'senior') {
+    opt1.textContent = '1 คน (รับ 25 คน)';
+    opt2.textContent = '2 คน (รับ 50 คน)';
+    capInput.value = (count === '2') ? 50 : 25;
+  } else {
+    opt1.textContent = '1 คน (รับ 30 คน)';
+    opt2.textContent = '2 คน (รับ 60 คน)';
+    capInput.value = (count === '2') ? 60 : 30;
+  }
+
   if (count === '2') {
-    capInput.value = 60;
     t2Label.classList.remove('hidden');
     if (t1Text) t1Text.textContent = 'ครูประจำชุมนุมคนที่ 1';
     if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครูคนที่ 1';
   } else {
-    capInput.value = 30;
     t2Label.classList.add('hidden');
     if (t1Text) t1Text.textContent = 'ครูประจำชุมนุม';
     if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครู';
@@ -613,20 +983,35 @@ function onNewTeacherCountChange() {
   }
 }
 
-function onEditTeacherCountChange() {
+/**
+ * จัดการเมื่อเปลี่ยนระดับชั้นหรือจำนวนครูใน Modal แก้ไขชุมนุม
+ */
+function onEditClubLevelOrTeacherChange() {
+  const level = document.getElementById('editClubLevel').value;
   const count = document.getElementById('editClubTeacherCount').value;
   const capInput = document.getElementById('editClubCapacity');
   const t2Label = document.getElementById('editClubTeacher2Label');
   const t1Text = document.getElementById('editClubTeacher1Text');
   const t1Input = document.getElementById('editClubTeacher1');
 
+  const opt1 = document.getElementById('editClubTCount1Opt');
+  const opt2 = document.getElementById('editClubTCount2Opt');
+
+  if (level === 'senior') {
+    opt1.textContent = '1 คน (รับ 25 คน)';
+    opt2.textContent = '2 คน (รับ 50 คน)';
+    capInput.value = (count === '2') ? 50 : 25;
+  } else {
+    opt1.textContent = '1 คน (รับ 30 คน)';
+    opt2.textContent = '2 คน (รับ 60 คน)';
+    capInput.value = (count === '2') ? 60 : 30;
+  }
+
   if (count === '2') {
-    capInput.value = 60;
     t2Label.classList.remove('hidden');
     if (t1Text) t1Text.textContent = 'ครูประจำชุมนุมคนที่ 1';
     if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครูคนที่ 1';
   } else {
-    capInput.value = 30;
     t2Label.classList.add('hidden');
     if (t1Text) t1Text.textContent = 'ครูประจำชุมนุม';
     if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครู';
@@ -645,6 +1030,7 @@ function parseTeachers(teacherStr) {
 
 function addNewClub() {
   const name = document.getElementById('newClubName').value.trim();
+  const level = document.getElementById('newClubLevel').value;
   const tCount = document.getElementById('newClubTeacherCount').value;
   const t1 = document.getElementById('newClubTeacher1').value.trim();
   const t2Input = document.getElementById('newClubTeacher2');
@@ -658,7 +1044,15 @@ function addNewClub() {
   const teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
 
   const newId = db.clubs.length > 0 ? Math.max(...db.clubs.map(c => Number(c.id) || 0)) + 1 : 1;
-  const newClub = { id: newId, name, teacher, capacity, current_enrolled: 0, image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400' };
+  const newClub = { 
+    id: newId, 
+    name, 
+    teacher, 
+    capacity, 
+    level,
+    current_enrolled: 0, 
+    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400' 
+  };
 
   if (fileInput.files.length > 0) {
     fileToBase64(fileInput.files[0], (base64) => {
@@ -683,28 +1077,20 @@ function openEditModal(id) {
   document.getElementById('editClubId').value = club.id;
   document.getElementById('editClubName').value = club.name;
   
+  const isSenior = (club.level === 'senior' || club.capacity === 25 || club.capacity === 50);
+  const level = isSenior ? 'senior' : 'junior';
+  document.getElementById('editClubLevel').value = level;
+
   const parts = parseTeachers(club.teacher);
-  const isTwo = club.capacity >= 60 || Boolean(parts[1]);
+  const isTwo = (level === 'senior' ? club.capacity >= 50 : club.capacity >= 60) || Boolean(parts[1]);
   const tCount = isTwo ? '2' : '1';
   document.getElementById('editClubTeacherCount').value = tCount;
-  document.getElementById('editClubCapacity').value = tCount === '2' ? 60 : 30;
+
+  // ปรับตัวเลือกและคำนวณจำนวนรับ
+  onEditClubLevelOrTeacherChange();
   
   document.getElementById('editClubTeacher1').value = parts[0] || club.teacher;
   document.getElementById('editClubTeacher2').value = parts[1] || '';
-  
-  const t2Label = document.getElementById('editClubTeacher2Label');
-  const t1Text = document.getElementById('editClubTeacher1Text');
-  const t1Input = document.getElementById('editClubTeacher1');
-
-  if (tCount === '2') {
-    t2Label.classList.remove('hidden');
-    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุมคนที่ 1';
-    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครูคนที่ 1';
-  } else {
-    t2Label.classList.add('hidden');
-    if (t1Text) t1Text.textContent = 'ครูประจำชุมนุม';
-    if (t1Input) t1Input.placeholder = 'พิมพ์ชื่อครู';
-  }
   
   document.getElementById('editClubImageFile').value = ''; 
   document.getElementById('editClubModal').classList.remove('hidden');
@@ -717,6 +1103,7 @@ function saveEditedClub() {
   let club = db.clubs.find(c => c.id == id);
   if (club) {
     const name = document.getElementById('editClubName').value.trim();
+    const level = document.getElementById('editClubLevel').value;
     const tCount = document.getElementById('editClubTeacherCount').value;
     const t1 = document.getElementById('editClubTeacher1').value.trim();
     const t2 = document.getElementById('editClubTeacher2').value.trim();
@@ -726,6 +1113,7 @@ function saveEditedClub() {
     if (tCount === '2' && !t2) return alert('กรุณากรอกชื่อครูประจำชุมนุมคนที่ 2 ให้ครบถ้วน');
 
     club.name = name;
+    club.level = level;
     club.teacher = (tCount === '2' && t2) ? `${t1}, ${t2}` : t1;
     club.capacity = capacity;
 
