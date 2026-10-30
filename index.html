@@ -6,7 +6,7 @@
 <title>ระบบเลือกชุมนุมออนไลน์ | Satit VRU Clubs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Itim&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -143,7 +143,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 <div id="loadingOverlay" class="hidden">กำลังประมวลผล...</div>
 <div class="app">
 <header class="top">
-  <div class="brand"><div class="logo" id="siteLogo">🧸</div><div><h1>Satit VRU Clubs</h1><p id="topTermText">กำลังเชื่อมต่อฐานข้อมูล...</p></div></div>
+  <div class="brand"><div class="logo" id="siteLogo"><img src="logo.png" alt="Logo" onerror="this.parentElement.textContent='🏫'"></div><div><h1>Satit VRU Clubs</h1><p id="topTermText">กำลังเชื่อมต่อฐานข้อมูล...</p></div></div>
   <div class="top-actions"><span class="userpill hidden" id="userPill"></span><button id="logoutBtn" class="hidden" onclick="logout()">ออกจากระบบ</button></div>
 </header>
 
@@ -356,10 +356,10 @@ async function apiCall(action, payload, maxRetries = 4) {
 }
 
 function initLogo() {
-  const logo = db.settings.logo || '🧸';
+  const logo = db.settings.logo || 'logo.png';
   const logoEl = document.getElementById('siteLogo');
-  if(logo.startsWith('data:image') || logo.startsWith('http')) {
-    logoEl.innerHTML = `<img src="${logo}" alt="Logo">`;
+  if (logo.startsWith('data:image') || logo.startsWith('http') || logo.endsWith('.png') || logo.endsWith('.jpg')) {
+    logoEl.innerHTML = `<img src="${logo}" alt="Logo" onerror="this.parentElement.textContent='🏫'">`;
   } else {
     logoEl.innerHTML = logo;
   }
@@ -687,10 +687,13 @@ function renderMyClub() {
       <h2 style="margin:4px 0 8px;">${club.name}</h2>
       <p style="color:var(--muted); font-size:18px; margin:0;">👩‍🏫 ดูแลโดย: ${club.teacher}</p>
       <p style="color:var(--muted); font-size:15px; margin:6px 0 0;">👥 ยอดรับทั้งหมด: ${club.capacity} คน</p>
-      <div style="margin-top:24px;">
+      <div style="margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:12px;">
         <div style="display:inline-flex; align-items:center; gap:8px; padding:12px 24px; background:#e8f5e9; border:2px solid #a5d6a7; border-radius:16px; color:#2e7d32; font-weight:700; font-size:16px; box-shadow:0 2px 8px rgba(46,125,50,0.1);">
           <span>🔒 ยืนยันการเลือกเรียบร้อยแล้ว (เลือกได้ 1 ครั้ง ไม่สามารถเปลี่ยนได้)</span>
         </div>
+        <button class="secondary" style="display:inline-flex; align-items:center; gap:8px; padding:10px 22px; font-weight:600; font-size:15px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.06); cursor:pointer;" onclick="printStudentConfirmation()">
+          <span style="font-size:18px;">📄</span> พิมพ์ / ดาวน์โหลดใบยืนยัน (PDF)
+        </button>
       </div>
     </div>`;
 }
@@ -950,10 +953,15 @@ function renderAdminManage() {
     <div class="panel sticker">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
         <h3 style="margin:0;">📚 รายการชุมนุมทั้งหมด</h3>
-        <div class="filter-btn-group" style="margin:0;">
-          <button class="filter-btn ${adminManageLevelFilter === 'all' ? 'active' : ''}" onclick="setAdminManageFilter('all')">ทั้งหมด (${db.clubs.length})</button>
-          <button class="filter-btn ${adminManageLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminManageFilter('junior')">🎒 ม.ต้น</button>
-          <button class="filter-btn ${adminManageLevelFilter === 'senior' ? 'active' : ''}" onclick="setAdminManageFilter('senior')">🎓 ม.ปลาย</button>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div class="filter-btn-group" style="margin:0;">
+            <button class="filter-btn ${adminManageLevelFilter === 'all' ? 'active' : ''}" onclick="setAdminManageFilter('all')">ทั้งหมด (${db.clubs.length})</button>
+            <button class="filter-btn ${adminManageLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminManageFilter('junior')">🎒 ม.ต้น</button>
+            <button class="filter-btn ${adminManageLevelFilter === 'senior' ? 'active' : ''}" onclick="setAdminManageFilter('senior')">🎓 ม.ปลาย</button>
+          </div>
+          <button class="primary" style="padding:7px 16px; font-size:14px; border-radius:12px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" onclick="printAllClubsRoster()">
+            <span>📑</span> พิมพ์ใบรายชื่อทุกชุมนุม (PDF รวม)
+          </button>
         </div>
       </div>
 
@@ -977,7 +985,8 @@ function renderAdminManage() {
               <td>${c.teacher}</td>
               <td><b style="color:${c.current_enrolled>=c.capacity?'var(--pink)':'var(--green)'}">${c.current_enrolled}</b> / ${c.capacity} คน</td>
               <td>
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <button class="secondary" style="padding:6px 10px; font-size:13px;" onclick="printClubRoster(${c.id})" title="พิมพ์ใบรายชื่อนักเรียน">📄 ใบรายชื่อ</button>
                   <button class="secondary" style="padding:6px 12px; font-size:14px" onclick="openEditModal(${c.id})">แก้ไข</button>
                   <button class="danger" style="padding:6px 12px; font-size:14px" onclick="deleteClub(${c.id})">ลบ</button>
                 </div>
@@ -1262,6 +1271,420 @@ function saveLogoFile() {
       }
     });
   } else alert('กรุณาเลือกไฟล์รูปภาพก่อน');
+}
+
+/**
+ * 🖨️ ระบบส่งออกและพิมพ์เอกสาร PDF (ฟอนต์ Sarabun + โลโก้โรงเรียน)
+ */
+function openPrintWindow(title, contentHtml) {
+  const printWin = window.open('', '_blank');
+  if (!printWin) {
+    alert('⚠️ กรุณาอนุญาตป๊อปอัป (Pop-up) ในเบราว์เซอร์ เพื่อเปิดหน้าพิมพ์เอกสาร PDF');
+    return;
+  }
+
+  printWin.document.open();
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: 'Sarabun', 'TH Sarabun New', sans-serif;
+    color: #1a1a1a;
+    background: #eef2f5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-toolbar {
+    position: sticky;
+    top: 10px;
+    z-index: 1000;
+    background: #1e293b;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 auto 24px auto;
+    max-width: 210mm;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.18);
+  }
+  .print-btn {
+    background: #2e7d32;
+    color: #fff;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 8px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .print-btn:hover { background: #1b5e20; }
+  .page {
+    background: #fff;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm 18mm 18mm 18mm;
+    margin: 0 auto 24px auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    position: relative;
+    border-radius: 2px;
+  }
+  @media print {
+    body {
+      background: #fff !important;
+      padding: 0 !important;
+    }
+    .page {
+      width: 100% !important;
+      min-height: auto !important;
+      margin: 0 !important;
+      padding: 10mm 15mm 15mm 15mm !important;
+      box-shadow: none !important;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+  .school-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 10px auto;
+  }
+  .doc-header {
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .doc-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0d47a1;
+  }
+  .doc-header h3 {
+    margin: 4px 0 0 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .doc-header p {
+    margin: 2px 0 0 0;
+    font-size: 14px;
+    color: #444;
+  }
+  .doc-box {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    background: #fff;
+  }
+  .doc-box-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .info-table td {
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+  table.roster-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 12.5px;
+  }
+  table.roster-table th, table.roster-table td {
+    border: 1px solid #475569;
+    padding: 4px 6px;
+    vertical-align: middle;
+  }
+  table.roster-table th {
+    background: #f1f5f9;
+    font-weight: 700;
+    text-align: center;
+  }
+  .text-center { text-align: center !important; }
+  .sig-section {
+    margin-top: 36px;
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    font-size: 14px;
+  }
+  .sig-col {
+    width: 45%;
+  }
+  .sig-line {
+    margin-bottom: 42px;
+  }
+  .doc-footer {
+    margin-top: 25px;
+    font-size: 11px;
+    color: #64748b;
+    text-align: right;
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="print-toolbar no-print">
+    <div>
+      <b style="font-size: 16px;">ตัวอย่างเอกสารสำหรับพิมพ์ / PDF</b>
+      <span style="font-size: 13px; opacity: 0.85; margin-left: 12px;">(ปลายทาง: เลือก "Save as PDF" หรือ "บันทึกเป็น PDF")</span>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ สั่งพิมพ์ / บันทึก PDF</button>
+  </div>
+  ${contentHtml}
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  <\/script>
+</body>
+</html>`);
+  printWin.document.close();
+}
+
+function generateClubRosterHtml(club, clubEnrollments, allStudents, isMultiPage = false) {
+  const logoSrc = new URL('logo.png', window.location.href).href;
+  const isSenior = (club.level === 'senior');
+  
+  const enrolledStudentIds = new Set(clubEnrollments.map(e => String(e.student_id)));
+  const enrolledStudents = allStudents
+    .filter(s => enrolledStudentIds.has(String(s.id)))
+    .sort((a, b) => (a.class || '').localeCompare(b.class || '', 'th') || String(a.id).localeCompare(String(b.id)));
+
+  const rows = [];
+  const maxRows = Math.max(club.capacity, enrolledStudents.length);
+  for (let i = 0; i < maxRows; i++) {
+    const st = enrolledStudents[i];
+    if (st) {
+      rows.push(`
+        <tr>
+          <td class="text-center">${i + 1}</td>
+          <td class="text-center">${st.id}</td>
+          <td>${st.prefix || ''}${st.name || ''} ${st.surname || ''}</td>
+          <td class="text-center">${st.class || ''}</td>
+          <td></td>
+          <td></td>
+        </tr>
+      `);
+    } else {
+      rows.push(`
+        <tr>
+          <td class="text-center" style="color:#94a3b8;">${i + 1}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      `);
+    }
+  }
+
+  return `
+    <div class="page">
+      <img src="${logoSrc}" class="school-logo" alt="Logo" onerror="this.style.display='none'">
+      <div class="doc-header">
+        <h2>โรงเรียนสาธิตมหาวิทยาลัยราชภัฏวไลยอลงกรณ์ ในพระบรมราชูปถัมภ์</h2>
+        <h3>แบบบันทึกรายชื่อและการประเมินกิจกรรมชุมนุม</h3>
+        <p>ภาคเรียนที่ 2 ปีการศึกษา 2569</p>
+      </div>
+
+      <div class="doc-box" style="background:#f8fafc; font-size:13.5px; line-height:1.6;">
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+          <div><b>ชื่อชุมนุม:</b> <span style="font-size:15px; font-weight:700; color:#1b5e20;">${club.name}</span></div>
+          <div><b>ระดับชั้น:</b> ${isSenior ? 'มัธยมศึกษาตอนปลาย (ม.ปลาย)' : 'มัธยมศึกษาตอนต้น (ม.ต้น)'}</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-top:4px;">
+          <div><b>ครูที่ปรึกษาชุมนุม:</b> ${club.teacher}</div>
+          <div><b>ยอดรับทั้งหมด:</b> <b>${club.capacity}</b> คน | <b>ลงทะเบียนแล้ว:</b> <b>${enrolledStudents.length}</b> คน</div>
+        </div>
+      </div>
+
+      <table class="roster-table">
+        <thead>
+          <tr>
+            <th style="width: 7%;">ลำดับ</th>
+            <th style="width: 15%;">เลขประจำตัว</th>
+            <th style="width: 36%;">ชื่อ - นามสกุล</th>
+            <th style="width: 14%;">ชั้น / ห้อง</th>
+            <th style="width: 16%;">ลงชื่อผู้เรียน</th>
+            <th style="width: 12%;">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join('')}
+        </tbody>
+      </table>
+
+      <div class="sig-section">
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ............................................................</div>
+          <div>( ${club.teacher.split(/,|และ/)[0].trim()} )</div>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">ครูที่ปรึกษาชุมนุม</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ............................................................</div>
+          <div>( ............................................................ )</div>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">หัวหน้างานกิจกรรมพัฒนาผู้เรียน</div>
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        แบบพิมพ์จากระบบเลือกชุมนุมออนไลน์ Satit VRU Clubs | ออกเอกสารเมื่อ: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
+      </div>
+    </div>
+  `;
+}
+
+function printStudentConfirmation() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const student = currentUser.data;
+  const myEnroll = db.enrollments.find(e => e.student_id == student.id);
+  if (!myEnroll) return alert('ไม่พบข้อมูลการลงทะเบียนของคุณ');
+  const club = db.clubs.find(c => c.id == myEnroll.club_id);
+  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
+
+  const logoSrc = new URL('logo.png', window.location.href).href;
+  const isSenior = (club.level === 'senior');
+
+  const html = `
+    <div class="page" style="min-height: auto; padding: 18mm 20mm 20mm 20mm;">
+      <img src="${logoSrc}" class="school-logo" alt="Logo" onerror="this.style.display='none'">
+      <div class="doc-header">
+        <h2>โรงเรียนสาธิตมหาวิทยาลัยราชภัฏวไลยอลงกรณ์ ในพระบรมราชูปถัมภ์</h2>
+        <h3>ใบยืนยันการลงทะเบียนกิจกรรมชุมนุมออนไลน์</h3>
+        <p>ภาคเรียนที่ 2 ปีการศึกษา 2569</p>
+      </div>
+
+      <div class="doc-box">
+        <div class="doc-box-title" style="color:#0d47a1;">👤 ข้อมูลนักเรียน</div>
+        <table class="info-table">
+          <tr>
+            <td style="width: 25%;"><b>เลขประจำตัวนักเรียน:</b></td>
+            <td style="width: 35%; font-weight: 700; font-size: 15px;">${student.id}</td>
+            <td style="width: 20%;"><b>ระดับชั้น / ห้อง:</b></td>
+            <td style="width: 20%; font-weight: 700; font-size: 15px;">${student.class}</td>
+          </tr>
+          <tr>
+            <td><b>ชื่อ - นามสกุล:</b></td>
+            <td colspan="3" style="font-weight: 700; font-size: 16px; color: #1565c0;">${student.prefix || ''}${student.name || ''} ${student.surname || ''}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="doc-box" style="margin-top: 16px; border-color: #81c784; background: #fbfdfb;">
+        <div class="doc-box-title" style="color: #2e7d32;">🎯 ข้อมูลชุมนุมที่ลงทะเบียนสำเร็จ</div>
+        <table class="info-table">
+          <tr>
+            <td style="width: 25%;"><b>ชื่อชุมนุม:</b></td>
+            <td colspan="3" style="font-size: 18px; font-weight: 700; color: #1b5e20;">${club.name}</td>
+          </tr>
+          <tr>
+            <td><b>ระดับชั้นที่เปิดรับ:</b></td>
+            <td>${isSenior ? 'มัธยมศึกษาตอนปลาย (ม.4 - ม.6)' : 'มัธยมศึกษาตอนต้น (ม.1 - ม.3)'}</td>
+            <td><b>ยอดรับทั้งหมด:</b></td>
+            <td>${club.capacity} คน</td>
+          </tr>
+          <tr>
+            <td><b>ครูที่ปรึกษาชุมนุม:</b></td>
+            <td colspan="3" style="font-weight: 600;">${club.teacher}</td>
+          </tr>
+          <tr>
+            <td><b>วันและเวลาที่ลงทะเบียน:</b></td>
+            <td colspan="3" style="color: #555;">${myEnroll.timestamp || 'ลงทะเบียนเรียบร้อยแล้ว'}</td>
+          </tr>
+          <tr>
+            <td><b>สถานะการลงทะเบียน:</b></td>
+            <td colspan="3"><span style="color: #2e7d32; font-weight: 700;">✅ ได้รับสิทธิ์เข้าเรียนเรียบร้อยแล้ว (ยืนยันผล 100%)</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="doc-box" style="margin-top: 16px;">
+        <div class="doc-box-title">📌 คำชี้แจงและข้อปฏิบัติสำหรับนักเรียน</div>
+        <ol style="margin: 6px 0 0 20px; padding: 0; line-height: 1.6; font-size: 13.5px; color: #333;">
+          <li>ให้นักเรียนเข้าเรียนและร่วมกิจกรรมชุมนุมตามวันและเวลาในตารางเรียนทุกสัปดาห์</li>
+          <li>ปฏิบัติตามกฎระเบียบและคำแนะนำของครูที่ปรึกษาชุมนุมอย่างเคร่งครัด</li>
+          <li>การลงทะเบียนนี้ถือเป็นที่สิ้นสุดตามระเบียบของโรงเรียน <b>(เลือกได้ 1 ครั้ง ไม่สามารถขอเปลี่ยนชุมนุมได้)</b></li>
+          <li>โปรดบันทึกหรือพิมพ์เอกสารฉบับนี้ไว้เป็นหลักฐานเพื่อแสดงต่อครูที่ปรึกษาชุมนุมในวันเปิดเรียนกิจกรรมชุมนุม</li>
+        </ol>
+      </div>
+
+      <div class="sig-section" style="margin-top: 45px;">
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ............................................................</div>
+          <div>( ${student.prefix || ''}${student.name || ''} ${student.surname || ''} )</div>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">นักเรียนผู้ลงทะเบียน</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ............................................................</div>
+          <div>( ............................................................ )</div>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">ครูที่ปรึกษาชุมนุม / งานกิจกรรมพัฒนาผู้เรียน</div>
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        เอกสารฉบับนี้พิมพ์จากระบบเลือกชุมนุมออนไลน์ Satit VRU Clubs | ออกเอกสารเมื่อ: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
+      </div>
+    </div>
+  `;
+
+  openPrintWindow(`ใบยืนยันการเลือกชุมนุม_${student.id}_${student.name}`, html);
+}
+
+function printClubRoster(clubId) {
+  const club = db.clubs.find(c => c.id == clubId);
+  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
+  const clubEnrollments = db.enrollments.filter(e => e.club_id == clubId);
+  const html = generateClubRosterHtml(club, clubEnrollments, db.students, false);
+  openPrintWindow(`ใบรายชื่อชุมนุม_${club.name}`, html);
+}
+
+function printAllClubsRoster() {
+  let clubs = db.clubs;
+  if (adminManageLevelFilter !== 'all') {
+    clubs = clubs.filter(c => c.level === adminManageLevelFilter);
+  }
+  if (clubs.length === 0) return alert('ไม่พบข้อมูลชุมนุมตามตัวกรองที่เลือก');
+
+  const pagesHtml = clubs.map(c => {
+    const clubEnrollments = db.enrollments.filter(e => e.club_id == c.id);
+    return generateClubRosterHtml(c, clubEnrollments, db.students, true);
+  }).join('');
+
+  openPrintWindow(`ใบรายชื่อชุมนุมทั้งหมด_SatitVRU`, pagesHtml);
 }
 </script>
 </body>
