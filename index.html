@@ -217,8 +217,8 @@ input:checked + .slider:before { transform: translateX(26px); }
 
       <label>จำนวนครูผู้ดูแล 
         <select class="field" id="editClubTeacherCount" onchange="onEditClubLevelOrTeacherChange()">
-          <option value="1" id="editClubTCount1Opt">1 คน (รับ 30 คน)</option>
-          <option value="2" id="editClubTCount2Opt">2 คน (รับ 60 คน)</option>
+          <option value="1" id="editClubTCount1Opt">1 คน (รับ 35 คน)</option>
+          <option value="2" id="editClubTCount2Opt">2 คน (รับ 70 คน)</option>
         </select>
       </label>
 
@@ -262,14 +262,14 @@ function getStudentLevel(studentClass) {
 
 /**
  * คำนวณจำนวนรับตามระดับชั้นและจำนวนครู
- * ม.ต้น: ครู 1 คน = 30, ครู 2 คน = 60
- * ม.ปลาย: ครู 1 คน = 25, ครู 2 คน = 50
+ * ม.ต้น: ครู 1 คน = 35, ครู 2 คน = 70
+ * ม.ปลาย: ครู 1 คน = 30, ครู 2 คน = 60
  */
 function getCapacityForLevel(level, teacherCount) {
   if (level === 'senior') {
-    return teacherCount === '2' ? 50 : 25;
+    return teacherCount === '2' ? 60 : 30;
   }
-  return teacherCount === '2' ? 60 : 30;
+  return teacherCount === '2' ? 70 : 35;
 }
 
 window.onload = async () => {
@@ -531,7 +531,7 @@ function renderStudentClubs() {
 
   // กรองเฉพาะระดับชั้นของนักเรียน
   const levelClubs = db.clubs.filter(c => {
-    const cLvl = c.level || (c.capacity === 25 || c.capacity === 50 ? 'senior' : 'junior');
+    const cLvl = c.level || 'junior';
     return cLvl === studentLevel;
   });
 
@@ -544,6 +544,7 @@ function renderStudentClubs() {
     const isMine = myEnroll && myEnroll.club_id == club.id;
     const percent = Math.min(100, (club.current_enrolled / club.capacity) * 100);
     const seatsLeft = Math.max(0, club.capacity - club.current_enrolled);
+    const isSenior = (club.level === 'senior');
     
     let btnHtml = '';
     if (!db.settings.is_open) btnHtml = `<button class="secondary" disabled>🔒 ปิดรับสมัคร</button>`;
@@ -555,8 +556,8 @@ function renderStudentClubs() {
     return `
       <article class="club sticker">
         <div class="clubcover" style="background-image:url('${club.image}')">
-          <span class="level-badge ${club.level || 'junior'}" style="position:absolute; top:10px; left:10px;">
-            ${(club.level === 'senior' || club.capacity === 25 || club.capacity === 50) ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}
+          <span class="level-badge ${isSenior ? 'senior' : 'junior'}" style="position:absolute; top:10px; left:10px;">
+            ${isSenior ? '🎓 ม.ปลาย' : '🎒 ม.ต้น'}
           </span>
           ${isFull 
             ? '<span class="tag full" style="position:absolute; top:10px; right:10px;">🔴 เต็มแล้ว</span>' 
@@ -642,8 +643,11 @@ function renderStudentClubs() {
 
 async function enrollClub(id) {
   if (isSubmitting) return;
+  const myEnroll = db.enrollments.find(e => e.student_id == currentUser.data.id);
+  if (myEnroll) return alert('คุณได้เลือกชุมนุมไปแล้ว (ระบบกำหนดให้เลือกได้เพียง 1 ครั้งเท่านั้น)');
   if (!db.settings.is_open) return alert('ปิดรับสมัครแล้ว');
-  if (confirm('ยืนยันสมัครชุมนุมนี้ใช่หรือไม่?')) {
+  
+  if (confirm('⚠️ ยืนยันสมัครชุมนุมนี้ใช่หรือไม่?\n\n(หมายเหตุ: สามารถเลือกได้เพียง 1 ครั้งเท่านั้น ไม่สามารถเปลี่ยนหรือยกเลิกชุมนุมได้)')) {
     isSubmitting = true;
     try {
       const studentLevel = currentUser.level || getStudentLevel(currentUser.data.class);
@@ -660,39 +664,16 @@ async function enrollClub(id) {
 }
 
 async function cancelClub() {
-  if (isSubmitting) return;
-  let studentData = db.students.find(s => s.id == currentUser.data.id);
-  let cancelCount = studentData ? (studentData.cancel_count || 0) : 0;
-  if (cancelCount >= 1) return alert('🚫 คุณใช้สิทธิ์เปลี่ยนชุมนุมครบแล้ว');
-  
-  if (confirm('⚠️ ยืนยันยกเลิกชุมนุมนี้ใช่หรือไม่?\n\n(คุณมีสิทธิ์เปลี่ยนใจได้อีกแค่ 1 ครั้ง)')) {
-    isSubmitting = true;
-    try {
-      let success = await apiCall('cancel', { student_id: currentUser.data.id });
-      if (success) setStudentTab('clubs');
-    } finally {
-      isSubmitting = false;
-    }
-  }
+  alert('🚫 ระบบกำหนดให้นักเรียนเลือกชุมนุมได้เพียง 1 ครั้งเท่านั้น ไม่สามารถยกเลิกหรือเปลี่ยนชุมนุมได้');
 }
 
 function renderMyClub() {
   const myEnroll = db.enrollments.find(e => e.student_id == currentUser.data.id);
-  const studentData = db.students.find(s => s.id == currentUser.data.id);
-  const cancelCount = studentData ? (studentData.cancel_count || 0) : 0;
   if (!myEnroll) return `<div class="panel sticker" style="text-align:center; padding: 50px 20px;"><h3>คุณยังไม่ได้เลือกชุมนุม 🥺</h3><p style="color:var(--muted)">ไปที่หน้า "เลือกชุมนุม" เพื่อเริ่มต้นเลย</p></div>`;
   const club = db.clubs.find(c => c.id == myEnroll.club_id);
-  
-  let cancelBtnHtml = '';
-  if (!db.settings.is_open) {
-    cancelBtnHtml = `<button class="secondary" disabled>🔒 ปิดรับสมัครแล้ว</button>`;
-  } else if (cancelCount >= 1) {
-    cancelBtnHtml = `<button class="secondary" disabled>🚫 ใช้สิทธิ์เปลี่ยนชุมนุมครบแล้ว</button>`;
-  } else {
-    cancelBtnHtml = `<button class="danger" onclick="cancelClub()">🗑️ ยกเลิกชุมนุม (เปลี่ยนใจได้อีก 1 ครั้ง)</button>`;
-  }
+  if (!club) return `<div class="panel sticker" style="text-align:center; padding: 50px 20px;"><h3>ไม่พบข้อมูลชุมนุม</h3></div>`;
 
-  const isSenior = (club.level === 'senior' || club.capacity === 25 || club.capacity === 50);
+  const isSenior = (club.level === 'senior');
 
   return `
     <div class="panel sticker" style="max-width:520px; margin:0 auto; text-align:center;">
@@ -707,7 +688,9 @@ function renderMyClub() {
       <p style="color:var(--muted); font-size:18px; margin:0;">👩‍🏫 ดูแลโดย: ${club.teacher}</p>
       <p style="color:var(--muted); font-size:15px; margin:6px 0 0;">👥 ยอดรับทั้งหมด: ${club.capacity} คน</p>
       <div style="margin-top:24px;">
-        ${cancelBtnHtml}
+        <div style="display:inline-flex; align-items:center; gap:8px; padding:12px 24px; background:#e8f5e9; border:2px solid #a5d6a7; border-radius:16px; color:#2e7d32; font-weight:700; font-size:16px; box-shadow:0 2px 8px rgba(46,125,50,0.1);">
+          <span>🔒 ยืนยันการเลือกเรียบร้อยแล้ว (เลือกได้ 1 ครั้ง ไม่สามารถเปลี่ยนได้)</span>
+        </div>
       </div>
     </div>`;
 }
@@ -750,8 +733,8 @@ function renderAdminOverview() {
       <h2 style="margin:0;">📊 แดชบอร์ดภาพรวมชุมนุม</h2>
       <div class="filter-btn-group" style="margin:0;">
         <button class="filter-btn ${adminOverviewLevelFilter === 'all' ? 'active' : ''}" onclick="setAdminOverviewFilter('all')">🏫 ทุกระดับชั้น (${db.clubs.length})</button>
-        <button class="filter-btn ${adminOverviewLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminOverviewFilter('junior')">🎒 ม.ต้น (${db.clubs.filter(c => (c.level||'junior')==='junior' && c.capacity!==25 && c.capacity!==50).length})</button>
-        <button class="filter-btn ${adminOverviewLevelFilter === 'senior' ? 'active' : ''}" onclick="setAdminOverviewFilter('senior')">🎓 ม.ปลาย (${db.clubs.filter(c => c.level==='senior' || c.capacity===25 || c.capacity===50).length})</button>
+        <button class="filter-btn ${adminOverviewLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminOverviewFilter('junior')">🎒 ม.ต้น (${db.clubs.filter(c => (c.level||'junior')==='junior').length})</button>
+        <button class="filter-btn ${adminOverviewLevelFilter === 'senior' ? 'active' : ''}" onclick="setAdminOverviewFilter('senior')">🎓 ม.ปลาย (${db.clubs.filter(c => c.level==='senior').length})</button>
       </div>
     </div>
 
@@ -798,7 +781,7 @@ function renderAdminOverview() {
                 <th>ที่นั่งคงเหลือ</th>
               </tr>
               ${availableClubs.map(c => {
-                const isSenior = (c.level === 'senior' || c.capacity === 25 || c.capacity === 50);
+                const isSenior = (c.level === 'senior');
                 const left = c.capacity - c.current_enrolled;
                 return `
                   <tr>
@@ -834,7 +817,7 @@ function renderAdminOverview() {
                 <th>สถานะ</th>
               </tr>
               ${fullClubs.map(c => {
-                const isSenior = (c.level === 'senior' || c.capacity === 25 || c.capacity === 50);
+                const isSenior = (c.level === 'senior');
                 return `
                   <tr>
                     <td><b>${c.name}</b></td>
@@ -950,15 +933,15 @@ function renderAdminManage() {
 
         <label>จำนวนครูผู้ดูแล 
           <select class="field" id="newClubTeacherCount" onchange="onNewClubLevelOrTeacherChange()">
-            <option value="1" id="newClubTCount1Opt">1 คน (รับ 30 คน)</option>
-            <option value="2" id="newClubTCount2Opt">2 คน (รับ 60 คน)</option>
+            <option value="1" id="newClubTCount1Opt">1 คน (รับ 35 คน)</option>
+            <option value="2" id="newClubTCount2Opt">2 คน (รับ 70 คน)</option>
           </select>
         </label>
 
         <label id="newClubTeacher1Label"><span id="newClubTeacher1Text">ครูประจำชุมนุมคนที่ 1</span> <input class="field" id="newClubTeacher1" required placeholder="พิมพ์ชื่อครูคนที่ 1"></label>
         <label id="newClubTeacher2Label" class="hidden">ครูประจำชุมนุมคนที่ 2 <input class="field" id="newClubTeacher2" placeholder="พิมพ์ชื่อครูคนที่ 2"></label>
         
-        <label>จำนวนรับ (คน) <input class="field" type="number" id="newClubCapacity" readonly value="30" style="background:#f0f4f8; cursor:not-allowed;"></label>
+        <label>จำนวนรับ (คน) <input class="field" type="number" id="newClubCapacity" readonly value="35" style="background:#f0f4f8; cursor:not-allowed;"></label>
         <label>อัปโหลดรูปภาพปก <input type="file" class="field" id="newClubImageFile" accept="image/*"></label>
       </div>
       <button class="primary" style="margin-top:16px;" onclick="addNewClub()">บันทึกชุมนุมใหม่</button>
@@ -985,7 +968,7 @@ function renderAdminManage() {
             <th>จัดการ</th>
           </tr>
           ${clubs.map(c => {
-            const isSenior = (c.level === 'senior' || c.capacity === 25 || c.capacity === 50);
+            const isSenior = (c.level === 'senior');
             return `
             <tr>
               <td><img src="${c.image || 'https://via.placeholder.com/150'}" style="width:55px; height:55px; object-fit:cover; border-radius:12px;"></td>
@@ -1027,13 +1010,13 @@ function onNewClubLevelOrTeacherChange() {
   const opt2 = document.getElementById('newClubTCount2Opt');
 
   if (level === 'senior') {
-    opt1.textContent = '1 คน (รับ 25 คน)';
-    opt2.textContent = '2 คน (รับ 50 คน)';
-    capInput.value = (count === '2') ? 50 : 25;
-  } else {
     opt1.textContent = '1 คน (รับ 30 คน)';
     opt2.textContent = '2 คน (รับ 60 คน)';
     capInput.value = (count === '2') ? 60 : 30;
+  } else {
+    opt1.textContent = '1 คน (รับ 35 คน)';
+    opt2.textContent = '2 คน (รับ 70 คน)';
+    capInput.value = (count === '2') ? 70 : 35;
   }
 
   if (count === '2') {
@@ -1064,13 +1047,13 @@ function onEditClubLevelOrTeacherChange() {
   const opt2 = document.getElementById('editClubTCount2Opt');
 
   if (level === 'senior') {
-    opt1.textContent = '1 คน (รับ 25 คน)';
-    opt2.textContent = '2 คน (รับ 50 คน)';
-    capInput.value = (count === '2') ? 50 : 25;
-  } else {
     opt1.textContent = '1 คน (รับ 30 คน)';
     opt2.textContent = '2 คน (รับ 60 คน)';
     capInput.value = (count === '2') ? 60 : 30;
+  } else {
+    opt1.textContent = '1 คน (รับ 35 คน)';
+    opt2.textContent = '2 คน (รับ 70 คน)';
+    capInput.value = (count === '2') ? 70 : 35;
   }
 
   if (count === '2') {
@@ -1171,12 +1154,12 @@ function openEditModal(id) {
   document.getElementById('editClubId').value = club.id;
   document.getElementById('editClubName').value = club.name;
   
-  const isSenior = (club.level === 'senior' || club.capacity === 25 || club.capacity === 50);
+  const isSenior = (club.level === 'senior');
   const level = isSenior ? 'senior' : 'junior';
   document.getElementById('editClubLevel').value = level;
 
   const parts = parseTeachers(club.teacher);
-  const isTwo = (level === 'senior' ? club.capacity >= 50 : club.capacity >= 60) || Boolean(parts[1]);
+  const isTwo = (level === 'senior' ? club.capacity >= 60 : club.capacity >= 70) || Boolean(parts[1]);
   const tCount = isTwo ? '2' : '1';
   document.getElementById('editClubTeacherCount').value = tCount;
 
