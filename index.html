@@ -540,6 +540,22 @@ function renderStudentClubs() {
   const totalRemainingSeats = availableClubs.reduce((sum, c) => sum + Math.max(0, c.capacity - c.current_enrolled), 0);
   const levelText = studentLevel === 'senior' ? 'มัธยมศึกษาตอนปลาย (ม.4 - ม.6)' : 'มัธยมศึกษาตอนต้น (ม.1 - ม.3)';
 
+  const myClub = myEnroll ? db.clubs.find(c => c.id == myEnroll.club_id) : null;
+  const enrolledBannerHtml = myClub ? `
+    <div style="background:#e8f5e9; border:2px solid #81c784; border-radius:18px; padding:14px 20px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; box-shadow:0 3px 10px rgba(46,125,50,0.08);">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:26px;">🎉</span>
+        <div>
+          <b style="color:#2e7d32; font-size:16px;">คุณได้ลงทะเบียนชุมนุม "${myClub.name}" เรียบร้อยแล้ว</b>
+          <p style="margin:2px 0 0; color:#455a64; font-size:14px;">สามารถกดพิมพ์หรือดาวน์โหลดใบยืนยันการเลือกชุมนุม (PDF) ได้ทันที</p>
+        </div>
+      </div>
+      <button class="primary" style="padding:9px 20px; font-size:14px; border-radius:12px; display:inline-flex; align-items:center; gap:8px; cursor:pointer;" onclick="setStudentTab('my'); setTimeout(printStudentConfirmation, 200);">
+        <span>📄</span> พิมพ์ใบยืนยัน (PDF)
+      </button>
+    </div>
+  ` : '';
+
   function renderClubCard(club, isFull) {
     const isMine = myEnroll && myEnroll.club_id == club.id;
     const percent = Math.min(100, (club.current_enrolled / club.capacity) * 100);
@@ -578,6 +594,8 @@ function renderStudentClubs() {
   }
 
   let html = `
+    ${enrolledBannerHtml}
+
     <!-- 📊 แถบสรุปแดชบอร์ดด้านบน -->
     <div class="dashboard-stat-grid">
       <div class="stat-card sticker" style="border-top: 4px solid var(--green);">
@@ -872,38 +890,78 @@ function renderAdminStudents() {
   return `
     <div class="panel sticker">
       <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom: 20px;">
-        <h3 style="margin:0">ข้อมูลนักเรียนรายห้อง</h3>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0">ข้อมูลนักเรียนรายห้อง</h3>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">แอดมินสามารถค้นหาและสั่งพิมพ์ใบยืนยันการลงทะเบียน (PDF) ของนักเรียนแต่ละคนได้</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
           <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display:none" onchange="importExcel(event)">
           <button class="secondary" onclick="document.getElementById('excelUpload').click()">📂 นำเข้าจาก Excel</button>
           <button class="primary" onclick="exportToExcel()">📥 โหลด Excel ออก</button>
         </div>
       </div>
-      <select id="classFilter" class="field" style="width:200px; margin-bottom:16px;" onchange="filterAdminTable()">
-        <option value="all">ดูทุกห้องเรียน</option>${options}
-      </select>
-      <div style="overflow-x:auto;" id="adminStudentTableArea">${buildAdminStudentTable('all')}</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+        <select id="classFilter" class="field" style="width:190px;" onchange="filterAdminTable()">
+          <option value="all">🏫 ดูทุกห้องเรียน</option>${options}
+        </select>
+        <input type="text" id="studentSearchFilter" class="field" style="width:260px;" placeholder="🔍 ค้นหารหัส หรือ ชื่อนักเรียน..." oninput="filterAdminTable()">
+      </div>
+      <div style="overflow-x:auto;" id="adminStudentTableArea">${buildAdminStudentTable('all', '')}</div>
     </div>`;
 }
 
-function buildAdminStudentTable(filterClass) {
+function buildAdminStudentTable(filterClass, searchQuery = '') {
   let list = db.students;
-  if(filterClass !== 'all') list = list.filter(s => s.class === filterClass);
+  if(filterClass && filterClass !== 'all') list = list.filter(s => s.class === filterClass);
+  if(searchQuery) {
+    const q = searchQuery.trim().toLowerCase();
+    list = list.filter(s => {
+      const fullName = `${s.prefix||''}${s.name||''} ${s.surname||''}`.toLowerCase();
+      return String(s.id).toLowerCase().includes(q) || fullName.includes(q);
+    });
+  }
   let rows = list.map(s => {
     const enroll = db.enrollments.find(e => e.student_id == s.id);
     const club = enroll ? db.clubs.find(c => c.id == enroll.club_id) : null;
     const clubName = club ? club.name : '<span style="color:var(--pink)">ยังไม่เลือก</span>';
-    return `<tr><td>${s.id}</td><td>${s.prefix}${s.name} ${s.surname}</td><td>${s.class}</td><td>${clubName}</td></tr>`;
+    const actionBtn = enroll ? `
+      <button class="secondary" style="padding:4px 10px; font-size:12.5px; border-radius:8px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="printStudentConfirmationByAdmin('${s.id}')" title="พิมพ์ใบยืนยันของนักเรียน">
+        <span>📄</span> พิมพ์ใบยืนยัน
+      </button>
+    ` : `<span style="color:#aaa; font-size:12px;">(ยังไม่เลือก)</span>`;
+
+    return `<tr>
+      <td>${s.id}</td>
+      <td>${s.prefix||''}${s.name||''} ${s.surname||''}</td>
+      <td>${s.class}</td>
+      <td>${clubName}</td>
+      <td style="text-align:center;">${actionBtn}</td>
+    </tr>`;
   }).join('');
-  return `<table id="exportTable"><tr><th>รหัสนักเรียน</th><th>ชื่อ - นามสกุล</th><th>ชั้นเรียน</th><th>ชุมนุมที่เลือก</th></tr>${rows}</table>`;
+  return `<table id="exportTable">
+    <tr>
+      <th>รหัสนักเรียน</th>
+      <th>ชื่อ - นามสกุล</th>
+      <th>ชั้นเรียน</th>
+      <th>ชุมนุมที่เลือก</th>
+      <th style="text-align:center;">ใบยืนยัน (PDF)</th>
+    </tr>
+    ${rows || '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">ไม่พบข้อมูลนักเรียน</td></tr>'}
+  </table>`;
 }
 
 function filterAdminTable() {
-  document.getElementById('adminStudentTableArea').innerHTML = buildAdminStudentTable(document.getElementById('classFilter').value);
+  const classVal = document.getElementById('classFilter') ? document.getElementById('classFilter').value : 'all';
+  const searchVal = document.getElementById('studentSearchFilter') ? document.getElementById('studentSearchFilter').value : '';
+  document.getElementById('adminStudentTableArea').innerHTML = buildAdminStudentTable(classVal, searchVal);
 }
 
 function exportToExcel() {
-  XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('exportTable'), {sheet: "รายชื่อชุมนุม"}), "ข้อมูลชุมนุมรายห้อง.xlsx");
+  const table = document.getElementById('exportTable').cloneNode(true);
+  table.querySelectorAll('tr').forEach(r => {
+    if (r.children.length > 4) r.removeChild(r.lastElementChild);
+  });
+  XLSX.writeFile(XLSX.utils.table_to_book(table, {sheet: "รายชื่อชุมนุม"}), "ข้อมูลชุมนุมรายห้อง.xlsx");
 }
 
 /**
@@ -1616,18 +1674,11 @@ function generateClubRosterHtml(club, clubEnrollments, allStudents, isMultiPage 
   `;
 }
 
-function printStudentConfirmation() {
-  if (!currentUser || currentUser.role !== 'student') return;
-  const student = currentUser.data;
-  const myEnroll = db.enrollments.find(e => e.student_id == student.id);
-  if (!myEnroll) return alert('ไม่พบข้อมูลการลงทะเบียนของคุณ');
-  const club = db.clubs.find(c => c.id == myEnroll.club_id);
-  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
-
+function generateStudentConfirmationHtml(student, enroll, club) {
   const logoSrc = new URL('logo.png', window.location.href).href;
   const isSenior = (club.level === 'senior');
 
-  const html = `
+  return `
     <div class="page" style="min-height: auto; padding: 18mm 20mm 20mm 20mm;">
       <img src="${logoSrc}" class="school-logo" alt="Logo" onerror="this.style.display='none'">
       <div class="doc-header">
@@ -1671,7 +1722,7 @@ function printStudentConfirmation() {
           </tr>
           <tr>
             <td><b>วันและเวลาที่ลงทะเบียน:</b></td>
-            <td colspan="3" style="color: #555;">${myEnroll.timestamp || 'ลงทะเบียนเรียบร้อยแล้ว'}</td>
+            <td colspan="3" style="color: #555;">${enroll.timestamp || 'ลงทะเบียนเรียบร้อยแล้ว'}</td>
           </tr>
           <tr>
             <td><b>สถานะการลงทะเบียน:</b></td>
@@ -1708,7 +1759,29 @@ function printStudentConfirmation() {
       </div>
     </div>
   `;
+}
 
+function printStudentConfirmation() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  const student = currentUser.data;
+  const myEnroll = db.enrollments.find(e => e.student_id == student.id);
+  if (!myEnroll) return alert('ไม่พบข้อมูลการลงทะเบียนของคุณ');
+  const club = db.clubs.find(c => c.id == myEnroll.club_id);
+  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
+
+  const html = generateStudentConfirmationHtml(student, myEnroll, club);
+  openPrintWindow(`ใบยืนยันการเลือกชุมนุม_${student.id}_${student.name}`, html);
+}
+
+function printStudentConfirmationByAdmin(studentId) {
+  const student = db.students.find(s => s.id == studentId);
+  if (!student) return alert('ไม่พบข้อมูลนักเรียน');
+  const enroll = db.enrollments.find(e => e.student_id == student.id);
+  if (!enroll) return alert(`นักเรียน ${student.prefix || ''}${student.name || ''} ${student.surname || ''} ยังไม่ได้ลงทะเบียนเลือกชุมนุม`);
+  const club = db.clubs.find(c => c.id == enroll.club_id);
+  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
+
+  const html = generateStudentConfirmationHtml(student, enroll, club);
   openPrintWindow(`ใบยืนยันการเลือกชุมนุม_${student.id}_${student.name}`, html);
 }
 
