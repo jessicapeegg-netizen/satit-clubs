@@ -265,6 +265,22 @@ input:checked + .slider:before { transform: translateX(26px); }
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9wiMDc8LVNvmqW6NDCUikoU5AcWrmXqaNV_MLyaZW4j6YqDC1IEObNNKayKOqtjJsJw/exec';
 
 let db = { settings: { is_open: false, term: 'กำลังโหลด...', logo: '🧸' }, students: [], clubs: [], enrollments: [] };
+
+// 🔒 ระบบป้องกันความปลอดภัย: ดักจับการเข้าถึง db.admins ใน Console
+function protectDbAdmins(targetDb) {
+  if (!targetDb || typeof targetDb !== 'object') return;
+  try {
+    delete targetDb.admins;
+    Object.defineProperty(targetDb, 'admins', {
+      get() {
+        return "🔒 ไม่อนุญาตให้เข้าถึงข้อมูลนี้ (Protected) อย่าเสือก";
+      },
+      enumerable: false,
+      configurable: true
+    });
+  } catch(e) {}
+}
+protectDbAdmins(db);
 let currentRole = 'student';
 let currentUser = null;
 let isSubmitting = false;
@@ -310,6 +326,7 @@ window.onload = async () => {
         }
         if (cachedDb.settings) {
           db = cachedDb;
+          protectDbAdmins(db);
           initLogo();
           document.getElementById('topTermText').textContent = db.settings.term;
           let btn = document.getElementById('loginBtn');
@@ -356,8 +373,8 @@ async function apiCall(action, payload, maxRetries = 4) {
 
       if (json.status === 'success') {
         if (json.data) {
-          if (json.data.admins) delete json.data.admins;
           db = json.data;
+          protectDbAdmins(db);
           try { localStorage.setItem('satit_clubs_db', JSON.stringify(db)); } catch(e) {}
         }
         overlay.classList.add('hidden');
