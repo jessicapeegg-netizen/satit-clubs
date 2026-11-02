@@ -264,7 +264,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 // ⚠️ ใส่ URL ใหม่ที่ได้จากการ Deploy ล่าสุดตรงนี้
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9wiMDc8LVNvmqW6NDCUikoU5AcWrmXqaNV_MLyaZW4j6YqDC1IEObNNKayKOqtjJsJw/exec';
 
-let db = { settings: { is_open: false, term: 'กำลังโหลด...', logo: '🧸' }, students: [], clubs: [], enrollments: [], admins: [] };
+let db = { settings: { is_open: false, term: 'กำลังโหลด...', logo: '🧸' }, students: [], clubs: [], enrollments: [] };
 let currentRole = 'student';
 let currentUser = null;
 let isSubmitting = false;
@@ -302,13 +302,20 @@ window.onload = async () => {
     const cachedStr = localStorage.getItem('satit_clubs_db');
     if (cachedStr) {
       const cachedDb = JSON.parse(cachedStr);
-      if (cachedDb && cachedDb.settings) {
-        db = cachedDb;
-        initLogo();
-        document.getElementById('topTermText').textContent = db.settings.term;
-        let btn = document.getElementById('loginBtn');
-        btn.textContent = '✨ เริ่มใช้งาน';
-        btn.disabled = false;
+      if (cachedDb) {
+        // ล้างข้อมูล admins เก่าที่อาจค้างอยู่ใน LocalStorage ทันที
+        if (cachedDb.admins) {
+          delete cachedDb.admins;
+          try { localStorage.setItem('satit_clubs_db', JSON.stringify(cachedDb)); } catch(e) {}
+        }
+        if (cachedDb.settings) {
+          db = cachedDb;
+          initLogo();
+          document.getElementById('topTermText').textContent = db.settings.term;
+          let btn = document.getElementById('loginBtn');
+          btn.textContent = '✨ เริ่มใช้งาน';
+          btn.disabled = false;
+        }
       }
     }
   } catch (e) {}
@@ -348,8 +355,11 @@ async function apiCall(action, payload, maxRetries = 4) {
       const json = await res.json();
 
       if (json.status === 'success') {
-        db = json.data;
-        try { localStorage.setItem('satit_clubs_db', JSON.stringify(db)); } catch(e) {}
+        if (json.data) {
+          if (json.data.admins) delete json.data.admins;
+          db = json.data;
+          try { localStorage.setItem('satit_clubs_db', JSON.stringify(db)); } catch(e) {}
+        }
         overlay.classList.add('hidden');
         return true;
       }
@@ -474,7 +484,7 @@ function pickRole(role) {
   document.getElementById('adminLoginFields').classList.toggle('hidden', role !== 'admin');
 }
 
-function login() {
+async function login() {
   if (currentRole === 'student') {
     const sId = document.getElementById('studentId').value.trim();
     const student = db.students.find(s => String(s.id) === String(sId));
@@ -504,17 +514,35 @@ function login() {
   } else {
     const u = document.getElementById('adminUser').value.trim();
     const p = document.getElementById('adminPass').value.trim();
+    if (!u || !p) return alert('กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน');
     
-    const adminUser = (db.admins || []).find(a => String(a.username) === u && String(a.password) === p);
-    if (!adminUser) return alert('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
-    
-    currentUser = { role: 'admin', data: adminUser };
-    document.getElementById('loginView').classList.add('hidden');
-    document.getElementById('adminAppView').classList.remove('hidden');
-    document.getElementById('logoutBtn').classList.remove('hidden');
-    document.getElementById('userPill').classList.remove('hidden');
-    document.getElementById('userPill').textContent = `👑 ${adminUser.name || 'ผู้ดูแลระบบ'}`;
-    setAdminTab('overview');
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.textContent = 'กำลังตรวจสอบสิทธิ์ผู้ดูแลระบบ...';
+    overlay.classList.remove('hidden');
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'adminLogin', username: u, password: p })
+      });
+      const json = await res.json();
+      overlay.classList.add('hidden');
+
+      if (json.status !== 'success') {
+        return alert(json.message || 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
+      }
+
+      currentUser = { role: 'admin', data: json.admin };
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('adminAppView').classList.remove('hidden');
+      document.getElementById('logoutBtn').classList.remove('hidden');
+      document.getElementById('userPill').classList.remove('hidden');
+      document.getElementById('userPill').textContent = `👑 ${json.admin.name || 'ผู้ดูแลระบบ'}`;
+      setAdminTab('overview');
+    } catch(err) {
+      overlay.classList.add('hidden');
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
+    }
   }
 }
 
