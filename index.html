@@ -235,6 +235,31 @@ input:checked + .slider:before { transform: translateX(26px); }
   </div>
 </div>
 
+<!-- Modal สำหรับดูสมาชิกชุมนุมและสั่งพิมพ์ใบยืนยัน -->
+<div id="clubMembersModal" class="modal-overlay hidden">
+  <div class="panel sticker modal-content" style="max-width: 760px; width: 100%;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+      <div>
+        <h3 id="cmModalTitle" style="margin:0; color:var(--pastel-blue); font-size:20px;">🎯 สมาชิกชุมนุม</h3>
+        <p id="cmModalSubtitle" style="margin:4px 0 0; color:var(--muted); font-size:14px;">ครูผู้ดูแล: -</p>
+      </div>
+      <button class="secondary" style="padding:6px 14px; font-size:14px; border-radius:10px; cursor:pointer;" onclick="closeClubMembersModal()">✕ ปิด</button>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; background:#f0f7ff; padding:12px 16px; border-radius:14px; border:1px solid #bbdefb;">
+      <div>
+        <span id="cmModalCountBadge" class="tag" style="background:#1976d2; color:white; font-size:14px;">0 คน</span>
+        <span style="font-size:13.5px; color:#455a64; margin-left:8px;">สามารถสั่งพิมพ์ใบยืนยันรายบุคคล หรือพิมพ์รวมทุกคนเป็นชุดเดียวได้</span>
+      </div>
+      <button id="cmPrintAllBtn" class="primary" style="padding:8px 18px; font-size:13.5px; border-radius:10px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+        <span>🖨️</span> พิมพ์ใบยืนยันทุกคน (PDF รวม)
+      </button>
+    </div>
+
+    <div style="overflow-x:auto; max-height:420px;" id="cmModalTableArea"></div>
+  </div>
+</div>
+
 <script>
 // ⚠️ ใส่ URL ใหม่ที่ได้จากการ Deploy ล่าสุดตรงนี้
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9wiMDc8LVNvmqW6NDCUikoU5AcWrmXqaNV_MLyaZW4j6YqDC1IEObNNKayKOqtjJsJw/exec';
@@ -1045,6 +1070,7 @@ function renderAdminManage() {
               <td>
                 <div style="display:flex; gap:6px; align-items:center;">
                   <button class="secondary" style="padding:6px 10px; font-size:13px;" onclick="printClubRoster(${c.id})" title="พิมพ์ใบรายชื่อนักเรียน">📄 ใบรายชื่อ</button>
+                  <button class="secondary" style="padding:6px 10px; font-size:13px;" onclick="openClubMembersModal(${c.id})" title="ดูสมาชิกและพิมพ์ใบยืนยันของชุมนุมนี้">👥 สมาชิก & ใบยืนยัน</button>
                   <button class="secondary" style="padding:6px 12px; font-size:14px" onclick="openEditModal(${c.id})">แก้ไข</button>
                   <button class="danger" style="padding:6px 12px; font-size:14px" onclick="deleteClub(${c.id})">ลบ</button>
                 </div>
@@ -1241,6 +1267,68 @@ function openEditModal(id) {
 }
 
 function closeEditModal() { document.getElementById('editClubModal').classList.add('hidden'); }
+
+function openClubMembersModal(clubId) {
+  const club = db.clubs.find(c => c.id == clubId);
+  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
+  const clubEnrollments = db.enrollments.filter(e => e.club_id == clubId);
+  
+  document.getElementById('cmModalTitle').textContent = `🎯 สมาชิกชุมนุม: ${club.name}`;
+  document.getElementById('cmModalSubtitle').innerHTML = `<b>ครูที่ปรึกษา:</b> ${club.teacher} | <b>ยอดรับ:</b> ${club.capacity} คน`;
+  document.getElementById('cmModalCountBadge').textContent = `ลงทะเบียนแล้ว ${clubEnrollments.length} / ${club.capacity} คน`;
+  
+  const printAllBtn = document.getElementById('cmPrintAllBtn');
+  if (clubEnrollments.length > 0) {
+    printAllBtn.disabled = false;
+    printAllBtn.style.opacity = '1';
+    printAllBtn.style.cursor = 'pointer';
+    printAllBtn.onclick = () => printClubAllConfirmations(club.id);
+  } else {
+    printAllBtn.disabled = true;
+    printAllBtn.style.opacity = '0.5';
+    printAllBtn.style.cursor = 'not-allowed';
+    printAllBtn.onclick = null;
+  }
+
+  let rows = clubEnrollments.map((enroll, idx) => {
+    const student = db.students.find(s => s.id == enroll.student_id);
+    const sId = student ? student.id : enroll.student_id;
+    const sName = student ? `${student.prefix || ''}${student.name || ''} ${student.surname || ''}` : '<span style="color:#888;">(ไม่พบข้อมูล)</span>';
+    const sClass = student ? student.class : '-';
+
+    return `<tr>
+      <td style="text-align:center;">${idx + 1}</td>
+      <td><b>${sId}</b></td>
+      <td>${sName}</td>
+      <td><span class="tag">${sClass}</span></td>
+      <td style="font-size:12.5px; color:#666;">${enroll.timestamp || '-'}</td>
+      <td style="text-align:center;">
+        <button class="secondary" style="padding:4px 10px; font-size:12px; border-radius:8px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="printStudentConfirmationByAdmin('${sId}')" title="พิมพ์ใบยืนยันของนักเรียนคนนี้">
+          <span>📄</span> พิมพ์ใบยืนยัน
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tableHtml = `<table>
+    <tr>
+      <th style="width:50px; text-align:center;">ลำดับ</th>
+      <th style="width:110px;">รหัสนักเรียน</th>
+      <th>ชื่อ - นามสกุล</th>
+      <th style="width:90px;">ชั้น</th>
+      <th style="width:140px;">เวลาลงทะเบียน</th>
+      <th style="width:130px; text-align:center;">ใบยืนยัน (PDF)</th>
+    </tr>
+    ${rows || '<tr><td colspan="6" style="text-align:center; padding:24px; color:#888;">ยังไม่มีนักเรียนลงทะเบียนในชุมนุมนี้</td></tr>'}
+  </table>`;
+
+  document.getElementById('cmModalTableArea').innerHTML = tableHtml;
+  document.getElementById('clubMembersModal').classList.remove('hidden');
+}
+
+function closeClubMembersModal() {
+  document.getElementById('clubMembersModal').classList.add('hidden');
+}
 
 function saveEditedClub() {
   const id = parseInt(document.getElementById('editClubId').value);
@@ -1678,6 +1766,16 @@ function generateStudentConfirmationHtml(student, enroll, club) {
   const logoSrc = new URL('logo.png', window.location.href).href;
   const isSenior = (club.level === 'senior');
 
+  const [t1, t2] = parseTeachers(club.teacher);
+  const teachers = [t1, t2].filter(Boolean);
+  const teacherSigCols = (teachers.length > 0 ? teachers : [club.teacher]).map(t => `
+    <div class="sig-col" style="flex: 1; min-width: 0;">
+      <div class="sig-line">ลงชื่อ ............................................................</div>
+      <div class="sig-name">( ${t} )</div>
+      <div class="sig-title">ครูที่ปรึกษาชุมนุม</div>
+    </div>
+  `).join('');
+
   return `
     <div class="page" style="min-height: auto; padding: 18mm 20mm 20mm 20mm;">
       <img src="${logoSrc}" class="school-logo" alt="Logo" onerror="this.style.display='none'">
@@ -1741,17 +1839,13 @@ function generateStudentConfirmationHtml(student, enroll, club) {
         </ol>
       </div>
 
-      <div class="sig-section" style="margin-top: 45px;">
-        <div class="sig-col" style="width: 45%;">
+      <div class="sig-section" style="margin-top: 45px; display: flex; justify-content: space-between; gap: 24px;">
+        <div class="sig-col" style="flex: 1; min-width: 0;">
           <div class="sig-line">ลงชื่อ ............................................................</div>
           <div class="sig-name">( ${student.prefix || ''}${student.name || ''} ${student.surname || ''} )</div>
           <div class="sig-title">นักเรียนผู้ลงทะเบียน</div>
         </div>
-        <div class="sig-col" style="width: 45%;">
-          <div class="sig-line">ลงชื่อ ............................................................</div>
-          <div class="sig-name">( ............................................................ )</div>
-          <div class="sig-title">ครูที่ปรึกษาชุมนุม / งานกิจกรรมพัฒนาผู้เรียน</div>
-        </div>
+        ${teacherSigCols}
       </div>
 
       <div class="doc-footer">
@@ -1783,6 +1877,23 @@ function printStudentConfirmationByAdmin(studentId) {
 
   const html = generateStudentConfirmationHtml(student, enroll, club);
   openPrintWindow(`ใบยืนยันการเลือกชุมนุม_${student.id}_${student.name}`, html);
+}
+
+function printClubAllConfirmations(clubId) {
+  const club = db.clubs.find(c => c.id == clubId);
+  if (!club) return alert('ไม่พบข้อมูลชุมนุม');
+  const clubEnrollments = db.enrollments.filter(e => e.club_id == clubId);
+  if (clubEnrollments.length === 0) return alert('ยังไม่มีนักเรียนลงทะเบียนในชุมนุมนี้');
+
+  const pagesHtml = clubEnrollments.map(enroll => {
+    const student = db.students.find(s => s.id == enroll.student_id);
+    if (!student) return '';
+    return generateStudentConfirmationHtml(student, enroll, club);
+  }).filter(Boolean).join('');
+
+  if (!pagesHtml) return alert('ไม่สามารถสร้างเอกสารได้เนื่องจากไม่พบข้อมูลนักเรียน');
+
+  openPrintWindow(`ใบยืนยันการเลือกชุมนุม_${club.name}_ทุกคน`, pagesHtml);
 }
 
 function printClubRoster(clubId) {
