@@ -1014,19 +1014,25 @@ function importExcel(event) {
 }
 
 function renderAdminStudents() {
-  const classes = [...new Set(db.students.map(s => s.class))].sort();
+  const classes = [...new Set(db.students.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
   const options = classes.map(c => `<option value="${c}">ชั้น ${c}</option>`).join('');
   return `
     <div class="panel sticker">
       <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom: 20px;">
         <div>
           <h3 style="margin:0">ข้อมูลนักเรียนรายห้อง</h3>
-          <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">แอดมินสามารถค้นหาและสั่งพิมพ์ใบยืนยันการลงทะเบียน (PDF) ของนักเรียนแต่ละคนได้</p>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">แอดมินสามารถค้นหา สั่งพิมพ์ใบรายงานรายห้อง (PDF) และพิมพ์ใบยืนยันการลงทะเบียนของนักเรียนได้</p>
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
           <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display:none" onchange="importExcel(event)">
           <button class="secondary" onclick="document.getElementById('excelUpload').click()">📂 นำเข้าจาก Excel</button>
           <button class="primary" onclick="exportToExcel()">📥 โหลด Excel ออก</button>
+          <button class="primary" id="printClassBtn" onclick="printCurrentClassRoster()" style="background:#0284c7; border-color:#0284c7; padding:7px 16px; font-size:14px; border-radius:12px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="พิมพ์แบบรายงานการเลือกชุมนุมรายห้อง (PDF)">
+            <span>📄</span> พิมพ์ PDF รายห้อง
+          </button>
+          <button class="secondary" onclick="printAllClassesRoster()" style="padding:7px 16px; font-size:14px; border-radius:12px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="พิมพ์แบบรายงานครบทุกห้องเรียน แยกห้องละ 1 หน้า A4 (PDF รวม)">
+            <span>📑</span> พิมพ์ทุกห้อง (PDF รวม)
+          </button>
         </div>
       </div>
       <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
@@ -1083,6 +1089,17 @@ function filterAdminTable() {
   const classVal = document.getElementById('classFilter') ? document.getElementById('classFilter').value : 'all';
   const searchVal = document.getElementById('studentSearchFilter') ? document.getElementById('studentSearchFilter').value : '';
   document.getElementById('adminStudentTableArea').innerHTML = buildAdminStudentTable(classVal, searchVal);
+  
+  const printBtn = document.getElementById('printClassBtn');
+  if (printBtn) {
+    if (classVal !== 'all') {
+      printBtn.innerHTML = `<span>📄</span> พิมพ์ PDF ห้อง ${classVal}`;
+      printBtn.title = `พิมพ์แบบรายงานการเลือกชุมนุมของห้อง ${classVal} (PDF)`;
+    } else {
+      printBtn.innerHTML = `<span>📄</span> พิมพ์ PDF รายห้อง`;
+      printBtn.title = `พิมพ์แบบรายงานการเลือกชุมนุมตามที่เลือก (PDF)`;
+    }
+  }
 }
 
 function exportToExcel() {
@@ -1739,6 +1756,12 @@ function openPrintWindow(title, contentHtml) {
     page-break-inside: avoid;
     break-inside: avoid;
   }
+  table.roster-table.compact {
+    font-size: 11.5px;
+  }
+  table.roster-table.compact th, table.roster-table.compact td {
+    padding: 3px 5px;
+  }
   .text-center { text-align: center !important; }
   .sig-section {
     margin-top: 30px;
@@ -2077,6 +2100,161 @@ function printAllClubsRoster() {
   }).join('');
 
   openPrintWindow(`ใบรายชื่อชุมนุมทั้งหมด_SatitVRU`, pagesHtml);
+}
+
+function generateClassRosterHtml(className, studentsInClass, isMultiPage = false) {
+  const logoSrc = new URL('logo.png', window.location.href).href;
+  const totalCount = studentsInClass.length;
+  let enrolledCount = 0;
+
+  // เรียงลำดับนักเรียนตามเลขประจำตัว
+  const sortedStudents = [...studentsInClass].sort((a, b) => 
+    String(a.id).localeCompare(String(b.id), undefined, { numeric: true })
+  );
+
+  const rowsHtml = sortedStudents.map((st, idx) => {
+    const enroll = db.enrollments.find(e => String(e.student_id) === String(st.id));
+    let clubName = '';
+    let clubTeacher = '-';
+    let statusNote = '';
+
+    if (enroll) {
+      enrolledCount++;
+      const club = db.clubs.find(c => c.id == enroll.club_id);
+      clubName = club ? `<b>${club.name}</b>` : `<span style="color:#64748b;">(รหัสชุมนุม ${enroll.club_id})</span>`;
+      clubTeacher = club ? (club.teacher || '-') : '-';
+      statusNote = '<span style="color:#2e7d32; font-weight:600;">ลงทะเบียนแล้ว</span>';
+    } else {
+      clubName = '<span style="color:#d32f2f; font-style:italic;">- ยังไม่เลือกชุมนุม -</span>';
+      clubTeacher = '-';
+      statusNote = '<span style="color:#d32f2f; font-weight:700;">ยังไม่เลือก</span>';
+    }
+
+    return `
+      <tr>
+        <td class="text-center">${idx + 1}</td>
+        <td class="text-center">${st.id}</td>
+        <td>${st.prefix || ''}${st.name || ''} ${st.surname || ''}</td>
+        <td>${clubName}</td>
+        <td>${clubTeacher}</td>
+        <td class="text-center">${statusNote}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const unEnrolledCount = totalCount - enrolledCount;
+  const enrolledPercent = totalCount > 0 ? Math.round((enrolledCount / totalCount) * 100) : 0;
+
+  return `
+    <div class="page" style="min-height: 297mm; padding: 12mm 15mm 15mm 15mm;">
+      <img src="${logoSrc}" class="school-logo" style="width:65px; height:65px; margin:0 auto 6px auto;" alt="Logo" onerror="this.style.display='none'">
+      <div class="doc-header" style="margin-bottom: 12px;">
+        <h2 style="font-size: 17px;">โรงเรียนสาธิตมหาวิทยาลัยราชภัฏวไลยอลงกรณ์ ในพระบรมราชูปถัมภ์</h2>
+        <h3 style="font-size: 15px; margin-top: 2px;">แบบรายงานข้อมูลการเลือกกิจกรรมชุมนุม รายห้องเรียน</h3>
+        <p style="font-size: 13.5px; margin-top: 2px;">${db.settings.term || 'ภาคเรียนที่ 2 ปีการศึกษา 2569'}</p>
+      </div>
+
+      <div class="doc-box" style="background:#f8fafc; font-size:13px; line-height:1.5; padding:8px 14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+          <div><b>ระดับชั้น / ห้องเรียน:</b> <span style="font-size:15px; font-weight:700; color:#0d47a1;">ชั้น ${className}</span></div>
+          <div><b>จำนวนนักเรียนทั้งหมด:</b> <b>${totalCount}</b> คน</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-top:4px;">
+          <div><b>เลือกชุมนุมแล้ว:</b> <b style="color:#2e7d32;">${enrolledCount}</b> คน (${enrolledPercent}%)</div>
+          <div><b>ยังไม่เลือกชุมนุม:</b> <b style="color:${unEnrolledCount > 0 ? '#d32f2f' : '#555'};">${unEnrolledCount}</b> คน</div>
+        </div>
+      </div>
+
+      <table class="roster-table compact">
+        <thead>
+          <tr>
+            <th style="width: 6%;">ลำดับ</th>
+            <th style="width: 14%;">เลขประจำตัว</th>
+            <th style="width: 28%;">ชื่อ - นามสกุล</th>
+            <th style="width: 26%;">ชุมนุมที่เลือก</th>
+            <th style="width: 16%;">ครูที่ปรึกษาชุมนุม</th>
+            <th style="width: 10%;">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="6" class="text-center" style="padding:15px; color:#94a3b8;">ไม่พบข้อมูลนักเรียนในห้องนี้</td></tr>'}
+        </tbody>
+      </table>
+
+      <div class="sig-grid" style="margin-top: 22px; row-gap: 24px;">
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ ............................................................</div>
+          <div class="sig-name">( ............................................................ )</div>
+          <div class="sig-title">ครูที่ปรึกษาประจำชั้น</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ ............................................................</div>
+          <div class="sig-name">( นางสาวแพรวพรรณ ภาสกุล )</div>
+          <div class="sig-title">หัวหน้างานกิจกรรมพัฒนาผู้เรียน</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ ............................................................</div>
+          <div class="sig-name">( นางสาวนฤมล การชัยศรี )</div>
+          <div class="sig-title">หัวหน้าฝ่ายงานวิชาการ</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-line">ลงชื่อ ............................................................</div>
+          <div class="sig-name">( อาจารย์ ดร.ภัทรพรรณ พรหมคช )</div>
+          <div class="sig-title">รองผู้อำนวยการโรงเรียนฝ่ายบริหารวิชาการ</div>
+        </div>
+      </div>
+
+      <div class="doc-footer" style="margin-top: 18px;">
+        แบบพิมพ์จากระบบเลือกชุมนุมออนไลน์ Satit VRU Clubs | ออกเอกสารเมื่อ: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
+      </div>
+    </div>
+  `;
+}
+
+function printCurrentClassRoster() {
+  const classVal = document.getElementById('classFilter') ? document.getElementById('classFilter').value : 'all';
+  const searchVal = document.getElementById('studentSearchFilter') ? document.getElementById('studentSearchFilter').value.trim() : '';
+
+  if (classVal !== 'all') {
+    let list = db.students.filter(s => s.class === classVal);
+    if (searchVal) {
+      const q = searchVal.toLowerCase();
+      list = list.filter(s => {
+        const fullName = `${s.prefix||''}${s.name||''} ${s.surname||''}`.toLowerCase();
+        return String(s.id).toLowerCase().includes(q) || fullName.includes(q);
+      });
+    }
+    if (list.length === 0) return alert(`ไม่พบข้อมูลนักเรียนในห้อง ${classVal}`);
+    const html = generateClassRosterHtml(classVal, list, false);
+    openPrintWindow(`แบบรายงานการเลือกชุมนุม_ห้อง_${classVal}`, html);
+  } else {
+    if (searchVal) {
+      let list = db.students.filter(s => {
+        const fullName = `${s.prefix||''}${s.name||''} ${s.surname||''}`.toLowerCase();
+        return String(s.id).toLowerCase().includes(searchVal.toLowerCase()) || fullName.includes(searchVal.toLowerCase());
+      });
+      list.sort((a, b) => (a.class || '').localeCompare(b.class || '', 'th', { numeric: true }) || String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+      if (list.length === 0) return alert('ไม่พบข้อมูลนักเรียนตามคำค้นหา');
+      const html = generateClassRosterHtml(`ผลการค้นหา (${searchVal})`, list, false);
+      openPrintWindow(`แบบรายงานการเลือกชุมนุม_ผลการค้นหา_${searchVal}`, html);
+    } else {
+      if (confirm('คุณกำลังเลือก "ดูทุกห้องเรียน" ต้องการพิมพ์แบบรายงาน PDF ครบทุกห้องเรียน (แยกหน้าละ 1 ห้อง) ใช่หรือไม่?\n\n(หากต้องการพิมพ์เฉพาะบางห้อง สามารถเลือกห้องเรียนจากเมนูตัวกรองก่อนได้ครับ)')) {
+        printAllClassesRoster();
+      }
+    }
+  }
+}
+
+function printAllClassesRoster() {
+  const classes = [...new Set(db.students.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+  if (classes.length === 0) return alert('ไม่พบข้อมูลนักเรียนในระบบ');
+
+  const pagesHtml = classes.map(cls => {
+    const studentsInClass = db.students.filter(s => s.class === cls);
+    return generateClassRosterHtml(cls, studentsInClass, true);
+  }).join('');
+
+  openPrintWindow(`แบบรายงานการเลือกชุมนุมรายห้อง_ทุกห้องเรียน_SatitVRU`, pagesHtml);
 }
 </script>
 </body>
