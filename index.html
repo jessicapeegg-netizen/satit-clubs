@@ -150,6 +150,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 <main id="loginView" class="login">
   <div class="loginbox sticker">
     <h2>เข้าสู่ระบบ</h2>
+    <div id="loginStatusIndicator" style="display:flex; justify-content:center; gap:8px; margin: 4px 0 16px 0; flex-wrap:wrap;"></div>
     <div class="rolepick">
       <button class="active" data-role="student" onclick="pickRole('student')">🎒 นักเรียน</button>
       <button data-role="admin" onclick="pickRole('admin')">🛡️ แอดมิน</button>
@@ -264,7 +265,22 @@ input:checked + .slider:before { transform: translateX(26px); }
 // ⚠️ ใส่ URL ใหม่ที่ได้จากการ Deploy ล่าสุดตรงนี้
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9wiMDc8LVNvmqW6NDCUikoU5AcWrmXqaNV_MLyaZW4j6YqDC1IEObNNKayKOqtjJsJw/exec';
 
-let db = { settings: { is_open: false, term: 'กำลังโหลด...', logo: '🧸' }, students: [], clubs: [], enrollments: [] };
+let db = { settings: { is_open: false, is_open_junior: false, is_open_senior: false, term: 'กำลังโหลด...', logo: '🧸' }, students: [], clubs: [], enrollments: [] };
+
+function renderLoginStatusIndicator() {
+  const el = document.getElementById('loginStatusIndicator');
+  if (!el || !db.settings) return;
+  const isJuniorOpen = (db.settings.is_open_junior !== false);
+  const isSeniorOpen = (db.settings.is_open_senior !== false);
+  el.innerHTML = `
+    <span class="tag" style="background:${isJuniorOpen ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:13px; padding:4px 10px;">
+      🎒 ม.ต้น: ${isJuniorOpen ? '🟢 เปิดรับสมัคร' : '🔴 ปิดรับสมัคร'}
+    </span>
+    <span class="tag" style="background:${isSeniorOpen ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:13px; padding:4px 10px;">
+      🎓 ม.ปลาย: ${isSeniorOpen ? '🟢 เปิดรับสมัคร' : '🔴 ปิดรับสมัคร'}
+    </span>
+  `;
+}
 
 // 🔒 ระบบป้องกันความปลอดภัย: ดักจับการเข้าถึง db.admins ใน Console
 function protectDbAdmins(targetDb) {
@@ -325,9 +341,12 @@ window.onload = async () => {
           try { localStorage.setItem('satit_clubs_db', JSON.stringify(cachedDb)); } catch(e) {}
         }
         if (cachedDb.settings) {
+          if (cachedDb.settings.is_open_junior === undefined) cachedDb.settings.is_open_junior = cachedDb.settings.is_open;
+          if (cachedDb.settings.is_open_senior === undefined) cachedDb.settings.is_open_senior = cachedDb.settings.is_open;
           db = cachedDb;
           protectDbAdmins(db);
           initLogo();
+          renderLoginStatusIndicator();
           document.getElementById('topTermText').textContent = db.settings.term;
           let btn = document.getElementById('loginBtn');
           btn.textContent = '✨ เริ่มใช้งาน';
@@ -339,7 +358,10 @@ window.onload = async () => {
 
   let success = await apiCall('getData', {});
   if(success) {
+     if (db.settings.is_open_junior === undefined) db.settings.is_open_junior = db.settings.is_open;
+     if (db.settings.is_open_senior === undefined) db.settings.is_open_senior = db.settings.is_open;
      initLogo();
+     renderLoginStatusIndicator();
      document.getElementById('topTermText').textContent = db.settings.term;
      let btn = document.getElementById('loginBtn');
      btn.textContent = '✨ เริ่มใช้งาน';
@@ -577,9 +599,30 @@ function logout() {
 
 function renderSystemBadge() {
   const badge = document.getElementById('systemStatusBadge');
-  badge.innerHTML = db.settings.is_open 
-    ? '<span class="tag" style="background:var(--green);color:white;font-size:16px;">🟢 เปิดรับสมัคร</span>' 
-    : '<span class="tag full" style="font-size:16px;">🔴 ปิดรับสมัคร</span>';
+  if (!badge || !db.settings) return;
+
+  const isJuniorOpen = (db.settings.is_open_junior !== false);
+  const isSeniorOpen = (db.settings.is_open_senior !== false);
+
+  if (currentUser && currentUser.role === 'student') {
+    const studentLevel = currentUser.level || getStudentLevel(currentUser.data.class);
+    const isOpen = (studentLevel === 'senior') ? isSeniorOpen : isJuniorOpen;
+    const levelLabel = (studentLevel === 'senior') ? 'ม.ปลาย' : 'ม.ต้น';
+    badge.innerHTML = isOpen 
+      ? `<span class="tag" style="background:var(--green); color:white; font-size:15px; padding:6px 14px;">🟢 เปิดรับสมัคร (${levelLabel})</span>` 
+      : `<span class="tag full" style="font-size:15px; padding:6px 14px;">🔴 ปิดรับสมัคร (${levelLabel})</span>`;
+  } else {
+    badge.innerHTML = `
+      <div style="display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span class="tag" style="background:${isJuniorOpen ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:13px; padding:5px 10px;">
+          🎒 ม.ต้น: ${isJuniorOpen ? 'เปิด' : 'ปิด'}
+        </span>
+        <span class="tag" style="background:${isSeniorOpen ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:13px; padding:5px 10px;">
+          🎓 ม.ปลาย: ${isSeniorOpen ? 'เปิด' : 'ปิด'}
+        </span>
+      </div>
+    `;
+  }
 }
 
 function setStudentTab(tab) {
@@ -631,9 +674,10 @@ function renderStudentClubs() {
     const percent = Math.min(100, (club.current_enrolled / club.capacity) * 100);
     const seatsLeft = Math.max(0, club.capacity - club.current_enrolled);
     const isSenior = (club.level === 'senior');
+    const isLevelOpen = isSenior ? (db.settings.is_open_senior !== false) : (db.settings.is_open_junior !== false);
     
     let btnHtml = '';
-    if (!db.settings.is_open) btnHtml = `<button class="secondary" disabled>🔒 ปิดรับสมัคร</button>`;
+    if (!isLevelOpen) btnHtml = `<button class="secondary" disabled>🔒 ปิดรับสมัคร (${isSenior ? 'ม.ปลาย' : 'ม.ต้น'})</button>`;
     else if (isMine) btnHtml = `<button class="success" disabled>✅ ชุมนุมของคุณ</button>`;
     else if (myEnroll) btnHtml = `<button class="secondary" disabled>คุณเลือกชุมนุมแล้ว</button>`;
     else if (isFull) btnHtml = `<button class="danger" disabled>❌ ที่นั่งเต็มแล้ว</button>`;
@@ -733,7 +777,12 @@ async function enrollClub(id) {
   if (isSubmitting) return;
   const myEnroll = db.enrollments.find(e => e.student_id == currentUser.data.id);
   if (myEnroll) return alert('คุณได้เลือกชุมนุมไปแล้ว (ระบบกำหนดให้เลือกได้เพียง 1 ครั้งเท่านั้น)');
-  if (!db.settings.is_open) return alert('ปิดรับสมัครแล้ว');
+  
+  const studentLevel = currentUser.level || getStudentLevel(currentUser.data.class);
+  const isLevelOpen = (studentLevel === 'senior') ? (db.settings.is_open_senior !== false) : (db.settings.is_open_junior !== false);
+  if (!isLevelOpen) {
+    return alert(`ขออภัย ขณะนี้ระบบปิดรับสมัครสำหรับระดับชั้น ${studentLevel === 'senior' ? 'ม.ปลาย (ม.4 - ม.6)' : 'ม.ต้น (ม.1 - ม.3)'} แล้ว`);
+  }
   
   if (confirm('⚠️ ยืนยันสมัครชุมนุมนี้ใช่หรือไม่?\n\n(หมายเหตุ: สามารถเลือกได้เพียง 1 ครั้งเท่านั้น ไม่สามารถเปลี่ยนหรือยกเลิกชุมนุมได้)')) {
     isSubmitting = true;
@@ -821,7 +870,17 @@ function renderAdminOverview() {
   return `
     <!-- ตัวกรองระดับชั้นของแดชบอร์ด -->
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
-      <h2 style="margin:0;">📊 แดชบอร์ดภาพรวมชุมนุม</h2>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <h2 style="margin:0;">📊 แดชบอร์ดภาพรวมชุมนุม</h2>
+        <div style="display:inline-flex; gap:6px;">
+          <span class="tag" style="background:${db.settings.is_open_junior !== false ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:12px; padding:4px 9px;">
+            🎒 ม.ต้น: ${db.settings.is_open_junior !== false ? 'เปิด' : 'ปิด'}
+          </span>
+          <span class="tag" style="background:${db.settings.is_open_senior !== false ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:12px; padding:4px 9px;">
+            🎓 ม.ปลาย: ${db.settings.is_open_senior !== false ? 'เปิด' : 'ปิด'}
+          </span>
+        </div>
+      </div>
       <div class="filter-btn-group" style="margin:0;">
         <button class="filter-btn ${adminOverviewLevelFilter === 'all' ? 'active' : ''}" onclick="setAdminOverviewFilter('all')">🏫 ทุกระดับชั้น (${db.clubs.length})</button>
         <button class="filter-btn ${adminOverviewLevelFilter === 'junior' ? 'active' : ''}" onclick="setAdminOverviewFilter('junior')">🎒 ม.ต้น (${db.clubs.filter(c => (c.level||'junior')==='junior').length})</button>
@@ -1423,19 +1482,51 @@ function saveEditedClub() {
 function finishSavingEdit() { saveData(); closeEditModal(); setAdminTab('manage'); }
 
 function renderAdminSettings() {
+  const isJuniorOpen = (db.settings.is_open_junior !== false);
+  const isSeniorOpen = (db.settings.is_open_senior !== false);
   return `
-    <div class="panel sticker" style="max-width: 600px;">
+    <div class="panel sticker" style="max-width: 650px;">
       <h3>🛠️ ตั้งค่าระบบ</h3>
-      <div style="margin: 24px 0; display:flex; align-items:center; gap: 16px; background:#fafafa; padding:16px; border-radius:16px; border:2px dashed #eceff1;">
-        <label class="switch">
-          <input type="checkbox" id="toggleSystemBtn" ${db.settings.is_open ? 'checked' : ''} onchange="toggleSystem()">
-          <span class="slider"></span>
-        </label>
-        <div>
-          <b style="font-size:18px;">เปิดระบบรับสมัคร</b>
-          <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">หากปิด นักเรียนจะไม่สามารถเลือกหรือเปลี่ยนชุมนุมได้</p>
+      <p style="color:var(--muted); font-size:14px; margin:4px 0 20px 0;">กำหนดการเปิด-ปิดระบบรับสมัครแยกตามระดับชั้น ม.ต้น และ ม.ปลาย</p>
+      
+      <div style="margin: 20px 0; display:flex; flex-direction:column; gap:14px;">
+        <!-- สวิตช์ ม.ต้น -->
+        <div style="display:flex; align-items:center; gap: 16px; background:#f4f9f4; padding:16px 20px; border-radius:16px; border:2px solid #c8e6c9;">
+          <label class="switch">
+            <input type="checkbox" id="toggleJuniorBtn" ${isJuniorOpen ? 'checked' : ''} onchange="toggleJuniorSystem()">
+            <span class="slider"></span>
+          </label>
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="level-badge junior" style="font-size:12.5px;">🎒 ม.ต้น</span>
+              <b style="font-size:16.5px;">เปิดรับสมัคร ม.ต้น (ม.1 - ม.3)</b>
+            </div>
+            <p style="margin:4px 0 0; color:var(--muted); font-size:13.5px;">ควบคุมการเปิด/ปิดรับสมัครเฉพาะนักเรียนและชุมนุม ม.ต้น</p>
+          </div>
+          <span id="juniorStatusTag" class="tag" style="background:${isJuniorOpen ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:13px; padding:5px 12px;">
+            ${isJuniorOpen ? '🟢 เปิดอยู่' : '🔴 ปิดอยู่'}
+          </span>
+        </div>
+
+        <!-- สวิตช์ ม.ปลาย -->
+        <div style="display:flex; align-items:center; gap: 16px; background:#fbf7fc; padding:16px 20px; border-radius:16px; border:2px solid #e1bee7;">
+          <label class="switch">
+            <input type="checkbox" id="toggleSeniorBtn" ${isSeniorOpen ? 'checked' : ''} onchange="toggleSeniorSystem()">
+            <span class="slider"></span>
+          </label>
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="level-badge senior" style="font-size:12.5px;">🎓 ม.ปลาย</span>
+              <b style="font-size:16.5px;">เปิดรับสมัคร ม.ปลาย (ม.4 - ม.6)</b>
+            </div>
+            <p style="margin:4px 0 0; color:var(--muted); font-size:13.5px;">ควบคุมการเปิด/ปิดรับสมัครเฉพาะนักเรียนและชุมนุม ม.ปลาย</p>
+          </div>
+          <span id="seniorStatusTag" class="tag" style="background:${isSeniorOpen ? 'var(--green)' : 'var(--pink)'}; color:white; font-size:13px; padding:5px 12px;">
+            ${isSeniorOpen ? '🟢 เปิดอยู่' : '🔴 ปิดอยู่'}
+          </span>
         </div>
       </div>
+
       <div style="margin-top:24px; padding-top:24px; border-top: 2px dashed #eceff1;">
         <label style="font-weight:bold; display:block; margin-bottom:12px;">อัปโหลดโลโก้โรงเรียน / เว็บไซต์</label>
         <div style="display:flex; flex-direction:column; gap:12px;">
@@ -1446,7 +1537,31 @@ function renderAdminSettings() {
     </div>`;
 }
 
-function toggleSystem() { db.settings.is_open = document.getElementById('toggleSystemBtn').checked; saveData(); }
+function toggleJuniorSystem() {
+  const val = document.getElementById('toggleJuniorBtn').checked;
+  db.settings.is_open_junior = val;
+  db.settings.is_open = (db.settings.is_open_junior || db.settings.is_open_senior);
+  const tag = document.getElementById('juniorStatusTag');
+  if (tag) {
+    tag.style.background = val ? 'var(--green)' : 'var(--pink)';
+    tag.textContent = val ? '🟢 เปิดอยู่' : '🔴 ปิดอยู่';
+  }
+  renderLoginStatusIndicator();
+  saveData();
+}
+
+function toggleSeniorSystem() {
+  const val = document.getElementById('toggleSeniorBtn').checked;
+  db.settings.is_open_senior = val;
+  db.settings.is_open = (db.settings.is_open_junior || db.settings.is_open_senior);
+  const tag = document.getElementById('seniorStatusTag');
+  if (tag) {
+    tag.style.background = val ? 'var(--green)' : 'var(--pink)';
+    tag.textContent = val ? '🟢 เปิดอยู่' : '🔴 ปิดอยู่';
+  }
+  renderLoginStatusIndicator();
+  saveData();
+}
 
 function saveLogoFile() {
   const fileInput = document.getElementById('logoFileInput');
